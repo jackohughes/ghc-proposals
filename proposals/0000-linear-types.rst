@@ -825,8 +825,16 @@ On the matter of dependent Haskell, to the best our knowledge, the only
 presentations of dependent types with linearity-in-kinds disallow
 linear types as arguments of dependent functions.
 
+Additive conjunction
+~~~~~~~~~~~~~~~~~~~~
+
+TODO
+
 Future extensions (not part of this proposal)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Toplevel-linear binders
+=======================
 
 Something that hasn't been touched up by this proposal is the idea of
 declaring toplevel linear binders
@@ -843,6 +851,20 @@ this property is a link-time property. This generalised the
 
 This would allow libraries to abstract on ``main`` or to provide their
 own linearly-threaded token.
+
+More multiplicities
+===================
+
+TODO
+
+The Core corner
+---------------
+
+*This section is an appendix to the proposal describing the changes
+to GHC's Core intermediate language in order to accommodate the new
+feature of this proposal*
+
+TODO
 
 Unresolved questions
 --------------------
