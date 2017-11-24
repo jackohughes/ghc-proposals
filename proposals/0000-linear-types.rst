@@ -754,6 +754,15 @@ except to the left of an arrow. And ``WithMult a p -> b`` means
 
   map :: (a `WithMult` p -> b) -> [a] `WithMult` p -> [b]
 
+Affine types rather than linear types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TODO
+
+- ``catch`` can get a finer type
+- No proof that it is useful
+- Easy to add affine types, but we prefer it to be staged
+
 Subtyping instead of polymorphism
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
