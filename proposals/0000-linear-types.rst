@@ -499,6 +499,95 @@ questions below for a more precise description):
   an equation, we want to infer the multiplicity annotation. The
   process for this is not yet defined.
 
+Non-termination, exceptions & catch
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+TODO: *something about the guarantees of linear functions in presence
+of non-termination and exceptions, compared to the total case*
+
+Can we write a resource-safe ``IOL`` monad with linear types despite
+the added difficulty of exception? Yes, as this section will show.
+
+Concretely, how do we ensure that the sockets from the example API are
+always closed, even in presence of exceptions? This boils down to how
+the ``IOL`` monad is implemented. Here is the sketch of one possible
+solution.
+
+TODO: *link to full implementation in linear base*
+
+First, note that since Haskell program are of type ``IO ()``, we need a
+way to run ``IOL`` in an ``IO`` computation, this is provided by the
+function
+
+::
+
+  runIOL :: IOL (Unrestricted a) -> IO a
+
+In order to achieve resource safety in presence of exception, ``runIOL``
+is tasked with releasing any live resource in case of exception.
+
+To implement this, ``IOL`` keeps a table of release actions, to be used
+in case of exceptions. Each resource implemented in the ``IOL``
+abstraction registers a release action in the release action table
+when they are acquired.
+
+If no exception occurs, then all resources have been released by the
+program. In case of exception, the program jumps to ``runIOL``, which
+releases the leftover resources.
+
+An alternative strategy would be to add terminators on every resources
+acquired in ``IOL``. Release in the non-exceptional case would still
+be performed by the program, and the GC would be responsible for
+releasing resources in case of exception. The release in case of
+exception would be, however, less timely.
+
+Can ``IOL`` have a ``catch``?
+=============================
+
+It is possible to catch exceptions inside of ``IOL``, but in order to
+ensure resource safety, the type must be restricted:
+
+::
+
+  catchL :: Exception e
+         => IOL (Unrestricted a) -> (e -> IOL (Unrestricted a)) -> IOL (Unrestricted a)
+
+That is: no linear resource previously allocated can be referenced in
+the body or the handler, and no resource allocated in the body or
+handler can be returned. In effect, ``catchL`` delimits an new scope,
+in which linear resources are isolated. To implement ``catchL``, we
+simply give it its own release action table, so that in case of
+exceptions all the local resources are released by ``catchL``, as
+``runIOL`` does, before the handler is called. The original release
+action table is then reinstated.
+
+With this implementation it is clear that capturing linear resources
+from the outside scope would compromise timely release, and returning
+locally acquired resources would leak resources in case of exception.
+
+The latter restriction can be lifted as follows: instead of
+reinstating the original release action table in the non-exceptional
+case, instate the *union* of the original table and the local one. In
+this case the type of ``catchL`` would be the following:
+
+::
+
+  catchL :: Exception e
+         => IOL a -> (e -> IOL a) -> IOL a
+
+Even with this type, however, exception handling remains clumsy, and
+it may prove better to use a more explicit exception-management
+mechanism for linear resources, such as the ``EitherT`` monad.
+
+TODO: *the following paragraph is not super clear, but I'd like to
+point out once more that we're doing libraries here*
+
+This demonstrates that the choice of primitives and of their types is a
+library question: depending on the invariants which we want to enforce
+(here resource safety, in particular timely release), and how the
+library is implemented, we may get different types.
+
+
 Effect and Interactions
 -----------------------
 
