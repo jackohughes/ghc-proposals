@@ -587,6 +587,29 @@ library question: depending on the invariants which we want to enforce
 (here resource safety, in particular timely release), and how the
 library is implemented, we may get different types.
 
+Can I throw linear exceptions?
+==============================
+
+In the type of ``catchL`` above, the type of the handler is ``e -> IOL
+a``. Correspondingly, the type of the exception-throwing primitives are:
+
+::
+
+  throwIOL :: Exception e => e -> IOL a
+  trow :: Exception e => e -> a
+
+That is exceptions don't have linear payload.
+
+While there does not seem to be any conceptual difficulty in throwing
+exception with linear payload, we have noticed that, in practice, many
+(linearly typed) abstractions which we have come up with rely on
+values not escaping a given scope. Barring a mechanism to delimit the
+scope of exceptions with linear payload, such linear exceptions may
+compromise such abstractions.
+
+To be conservative, and avoid potential such issue, we propose to
+consider exceptions as carrying only unrestricted payloads.
+
 
 Effect and Interactions
 -----------------------
