@@ -757,6 +757,26 @@ except to the left of an arrow. And ``WithMult a p -> b`` means
 Affine types rather than linear types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+In presence of exceptions it may seem that linear functions do not
+necessarily consume their arguments. For instance, an ``IOL a`` may
+abort before closing its file handles. And because of ``catch`` we are
+able to be observe this effect.
+
+Since exceptions are an integral part of Haskell, and since guarantees
+of linear functions are different in case of normal return or
+exceptional return, it is appealing to call for less guarantees in all
+cases.
+
+A function is called *affine* if it guarantees that if its returned
+value is consumed at most once, then its argument is consumed at most
+once.
+
+There are three possible system which we can consider:
+
+- A system with linear functions
+- A system with affine functions
+- A system with both linear and affine functions
+
 TODO
 
 - ``catch`` can get a finer type
