@@ -773,15 +773,50 @@ once.
 
 There are three possible system which we can consider:
 
-- A system with linear functions
-- A system with affine functions
-- A system with both linear and affine functions
+1. A system with linear functions (as we are proposing)
+2. A system with affine functions
+3. A system with both linear and affine functions
+
+All three system are consistent and can be easily accommodated in our
+formalism. In fact the formalism has been designed with extensibility
+in mind, and the proposed implementation is easy to change in order to
+cope with affine functions. Therefore the choice between these three
+systems is not a fundamental issue of this proposal. We are arguing
+for system (1), but it can easily be changed.
+
+*Technical remark: (3) is an extension of (1), but not of (2),
+because (2) requires a different typing rule for variables and data
+constructors, whereas (3) simply requires an extension of the
+multiplicity semiring*
+
+We argue against system (2) because linearity guarantees still matter,
+even if they are made more complex by exceptions. There are use-cases
+where exceptions don't matter (TODO: cite Samuel Gelinaux's example),
+it would arbitrary to prevent them from using the linear types that
+they need. Plus even in ``IOL`` code, where exceptions do matter,
+linear types are useful: they allow prompt deallocation as argued in
+(TODO: link to exception discussion), it can be much harder to reason
+on the lifetime of resources with explicit scopes like with
+``bracket`` (see (TODO: link to Facundo's blog post) for an example
+where scopes have proved to be unsatisfactory).
+
+There is, nonetheless, value to affine types. There are some
+applications where affine types are enough to enforce invariants (such
+as in-place mutation of garbage-collected structure, like mutable
+arrays). And they can presumably benefit from the additional
+flexibility. For instance, ``catch`` can get a more fine-grained type
+(writing ``'A`` for the affine multiplicity):
+
+::
+
+  catch :: Exception e => IOL a :'A-> (e -> IOL a) :'A-> IOL a
 
 TODO
 
 - ``catch`` can get a finer type
-- No proof that it is useful
+  - No proof that it is useful
 - Easy to add affine types, but we prefer it to be staged
+- Discuss Roman's encoding
 
 Subtyping instead of polymorphism
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
