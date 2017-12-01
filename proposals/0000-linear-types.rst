@@ -811,10 +811,19 @@ flexibility. For instance, ``catch`` can get a more fine-grained type
 
   catch :: Exception e => IOL a :'A-> (e -> IOL a) :'A-> IOL a
 
+So affine mutable arrays could be free variables in the body of a
+``catch``. It's not clear yet that this finer type for ``catch`` would
+actually be useful: the same affine free variable could not appear
+both in the body and the handler. The only instance of such a pattern
+which we've found documented so far, is in the Alms programming
+language, and the ``catch`` is merely used to perform clean-up and
+re-raise (TODO check that it reraises + ref. in Jesse Tov's thesis),
+we have abstracted this pattern away in the purely linear case. We
+invite the community to come up with good examples of such use of
+affine types.
+
 TODO
 
-- ``catch`` can get a finer type
-  - No proof that it is useful
 - Easy to add affine types, but we prefer it to be staged
 - Discuss Roman's encoding
 
