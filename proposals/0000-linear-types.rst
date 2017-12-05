@@ -171,6 +171,8 @@ as using types to statically enforce interaction protocols between
 communicating processes (*e.g.* via RPC calls). GHC users will no
 doubt invent many more use cases over time.
 
+.. _Specification:
+
 Proposed Change Specification
 -----------------------------
 
@@ -191,7 +193,7 @@ as follows).
   its result exactly once
 
 The type of linear function from type ``A`` to type ``B`` is written
-``A ->. B`` (see syntax below).
+``A ->. B`` (see Syntax_).
 
 Linearity is a strengthening of the contract of the regular function
 type ``A -> B``, which will be called the type of *unrestricted*
@@ -214,7 +216,7 @@ over whether a function is linear.
 
 A linear function is said to have multiplicity ``1`` while an
 unrestricted function is said to have multiplicity ``ω``. Multiplicity
-polymorphic functions may have variable multiplicity (see also Syntax below), *e.g.*
+polymorphic functions may have variable multiplicity (see also Syntax_), *e.g.*
 
 ::
 
@@ -228,6 +230,8 @@ would require four identical implementations:
 ::
 
   (.) :: (b :p-> c) -> (a :q-> b) -> a :(p ':* q)-> c
+
+.. _Syntax:
 
 Syntax
 ~~~~~~
@@ -253,9 +257,9 @@ indexed arrow.
 
   In the following, for conciseness, we write ``0`` for ``Zero``,
   ``1`` for ``One`` and ``U`` (ASCII) or ``ω`` (Unicode) for
-  ``Omega``. See the Formalism section below for the significance of
+  ``Omega``. See the Formalism_ section below for the significance of
   ``0``. Note: unification of multiplicities will be performed up to
-  the semiring laws for ``(:+)`` and ``(:*)`` (see Specification).
+  the semiring laws for ``(:+)`` and ``(:*)`` (see Specification_).
 - The multiplicity annotated arrow, for polymorphism, is written
   ``a :p-> b`` (where ``a`` and ``b`` are types and ``p`` is a
   multiplicity). To avoid introducing a new notion of "mixfix"
@@ -313,7 +317,7 @@ variables:
   f (Bar2 x y) = x  -- y is unrestricted, hence does not need to be consumed
 
 An exception to this rule is ``newtype`` declarations in GADT syntax:
-``newtype``-s' argument must be linear (see Interactions
+``newtype``-s' argument must be linear (see Interactions_
 below). For backward compatibility, we propose to make unrestricted arrows
 ``(->)`` in ``newtype``-s be interpreted as linear arrows, and create
 a new warning ``unrestricted-newtype`` triggered when this happens.
@@ -352,6 +356,8 @@ than define them, such as:
 
    data Unrestricted a where
      Unrestricted :: a -> Unrestricted a
+
+.. _Formalism:
 
 Formalism
 ~~~~~~~~~
@@ -490,8 +496,8 @@ creates a small complication where variables never stand for ``0``, in
 particular type-application of multiplicity variables must prohibit
 ``0``.
 
-There are unresolved issues regarding inference (see Unresolved
-questions below for a more precise description):
+There are unresolved issues regarding inference (see `Unresolved
+questions`_ below for a more precise description):
 
 - There is no account of multiplicity inference. A better
   understanding would make inference more predictable.
@@ -610,6 +616,7 @@ compromise such abstractions.
 To be conservative, and avoid potential such issue, we propose to
 consider exceptions as carrying only unrestricted payloads.
 
+.. _Interactions:
 
 Effect and Interactions
 -----------------------
@@ -646,7 +653,7 @@ has the consequence of consuming all the resources in the closure of
 newtypes convert ``case`` into a cast, hence the closure is never
 consumed. So ``newtype`` must not accept non-linear arrow with
 ``-XLinearTypes``. These are interpreted as linear ``newtype``-s and a
-warning is emitted (see Specification above).
+warning is emitted (see Specification_ above).
 
 Lazy pattern-matching is only allowed for unrestricted (multiplicity
 ``ω``) patterns: lazy patterns are defined in terms of projections
@@ -1050,6 +1057,8 @@ to GHC's Core intermediate language in order to accommodate the new
 feature of this proposal*
 
 TODO
+
+.. _`Unresolved questions`
 
 Unresolved questions
 --------------------
