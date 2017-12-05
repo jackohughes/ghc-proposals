@@ -244,8 +244,7 @@ indexed arrow.
   ::
 
     data Multiplicity
-      = Zero
-      | One
+      = One
       | Omega
 
   In addition, two specially recognised type families:
@@ -255,11 +254,10 @@ indexed arrow.
     type family (:+) :: Multiplicity -> Multiplicity -> Multiplicity
     type family (:*) :: Multiplicity -> Multiplicity -> Multiplicity
 
-  In the following, for conciseness, we write ``0`` for ``Zero``,
-  ``1`` for ``One`` and ``U`` (ASCII) or ``ω`` (Unicode) for
-  ``Omega``. See the Formalism_ section below for the significance of
-  ``0``. Note: unification of multiplicities will be performed up to
-  the semiring laws for ``(:+)`` and ``(:*)`` (see Specification_).
+  In the following, for conciseness ``1`` for ``One`` and ``U``
+  (ASCII) or ``ω`` (Unicode) for ``Omega``. Note: unification of
+  multiplicities will be performed up to the semiring laws for
+  ``(:+)`` and ``(:*)`` (see Specification_).
 - The multiplicity annotated arrow, for polymorphism, is written
   ``a :p-> b`` (where ``a`` and ``b`` are types and ``p`` is a
   multiplicity). To avoid introducing a new notion of "mixfix"
@@ -364,33 +362,20 @@ Formalism
 
 So far, we have considered only two multiplicities ``1`` and
 ``ω``. But the metatheory works with any so-called
-sup-semi-lattice-ordered semi-ring of multiplicities. That is: there
-is a 0, a 1, a sum and a product with the usual distributivity laws, a
-(computable) order compatible with the sum and product, such that each
-pair of multiplicities has a (computable) join. Even if there is only
-three multiplicities in this proposal, the proposal is structured to
-allow future extensions.
-
-None of our examples use ``0``, however, ``0`` turns out to be useful
-for implementation of type-checking. Additionally, ``0`` has been used
-by `Conor McBride
-<https://link.springer.com/chapter/10.1007/978-3-319-30936-1_12>`_ to
-handle dependent types, which may matter for Dependent Haskell. In
-both cases, the use of ``0`` could be seen as an internal use, but
-there is no real reason to deny access to the programmer. Hence it is
-included in the syntax.
+sup-semi-lattice-ordered semi-ring (without a 0) of
+multiplicities. That is: there a 1, a sum and a product with the usual
+distributivity laws, a (computable) order compatible with the sum and
+product, such that each pair of multiplicities has a (computable)
+join. Even if there is only three multiplicities in this proposal, the
+proposal is structured to allow future extensions.
 
 Here is the definition of sum, product and order for this proposal's
 multiplicities (in Haskell pseudo-syntax):
 
 ::
 
-   0 + x = x
-   x + 0 = x
    _ + _ = ω
 
-   0 * _ = 0
-   _ * 0 = 0
    1 * x = x
    x * 1 = 1
    ω * ω = ω
@@ -398,13 +383,9 @@ multiplicities (in Haskell pseudo-syntax):
    _ ⩽ ω = True
    x ⩽ y = x == y
 
-Note in particular that ``0 ≰ 1`` as arguments with multiplicity ``1``
-are consumed exactly once, which doesn't include not being consumed at
-all.
-
 Every variable in the environment is annotated with its multiplicity,
 which constrains how it can be used. A variable usage is said to be
-of multiplicity ``p`` in a term ``u`` if:
+of multiplicity ``p``, or ``0``, in a term ``u`` if:
 
 - ``p=0`` and ``x`` is not free in ``u``
 - ``p=1`` and ``u = x``
@@ -441,7 +422,9 @@ A ``case`` expression has an implicity multiplicity annotation, like
 ``let`` binding. It if often inferred from the type annotation of an
 equation. The usage of ``x`` in ``case_p u of { … }`` where the usage
 of ``x`` in ``u`` is ``q`` is ``p*q`` plus the *join* of the usage of
-``x`` in each branch.
+``x`` in each branch.  Note that, in usages, ``0 ≰ 1`` as arguments
+with multiplicity ``1`` are consumed exactly once, which doesn't
+include not being consumed at all.
 
 The multiplicity annotation of variables introduced by a pattern depend
 on the constructor and on the implicit annotation of the
@@ -498,27 +481,6 @@ which becomes much less useful in linear code if ``unFoo :: Foo ->
 A``. Our practice of linear Haskell code indicates that this feature,
 while a mere convenience, is desirable (see *e.g.* `here
 <https://github.com/tweag/linear-base/blob/e72d996b5d0600b2d5f2483b95b064d524c83e46/src/System/IO/Resource.hs#L59-L61>`_).
-
-An important point to note is that ``case_0`` is meaningless: it makes
-it possible to create values dependending on a value which may not
-exist at runtime. For instance the length of a list argument with multiplicity
-``0``.
-
-::
-
-  -- Wrong!
-  badLength :: [a] :'0-> Int
-  badLength [] = 0
-  badLength (_:l) = 1 + badLength l
-
-  -- Not linear! But well-typed if the above is accepted
-  f :: [a] ->. (Int, [a])
-  f l = (badLength l, l)
-
-Because we want to allow ``case_p`` for a variable ``p``, This
-creates a small complication where variables never stand for ``0``, in
-particular type-application of multiplicity variables must prohibit
-``0``.
 
 There are unresolved issues regarding inference (see `Unresolved
 questions`_ below for a more precise description):
@@ -908,52 +870,109 @@ this program to the well-typed η-expansion
   g :: A -> B
   g x = f x
 
-No restriction on multiplicity variables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Zero as a multiplicity
+~~~~~~~~~~~~~~~~~~~~~~
 
-Instead of restricting variables and type applications so that
-``case_p`` is allowed for a variable ``p``, we can allow arbitrary
-variables and disallow, in particular, ``case_p``.
+The implementation, and the usage-based definition of linearity in the
+Formalism_ section, use a ``0``. It is currently kept out of the
+actual multiplicities because we have no use case for this. But it
+would not be hard to provide. Additionally, ``0`` has been used by
+`Conor McBride
+<https://link.springer.com/chapter/10.1007/978-3-319-30936-1_12>`_ to
+handle dependent types, which may matter for Dependent Haskell.
 
-In this case, we would have:
+An alternative which we may consider, or which we may take into account
+when Dependent Haskell progresses, would be to have the multiplicity
+``0`` as an additional multiplicity.
 
-::
-
-   map :: (a :(p+1)-> b) -> [a] :(p+1)-> [b]
-   map f [] = []
-   map f (a:l) = f a : (map f l)
-
-In practice, under this situation, the type of ``map`` is probably better
-written as
-
-::
-
-   map :: forall p a b q. (p ~ q + 1) => (a :p-> b) -> [a] :p-> [b]
-
-In order to play more nicely, for instance, with explicit type
-applications.
-
-A benefit is that higher-order functions with no ``case`` such as
-``(.)`` are now capable of taking functions with multiplicity ``0`` as
-argument.
-
-A variation on the same idea is to introduce a constraint
+The definitions of sum, product and order would have to be modified as
+follows:
 
 ::
 
-  CaseCompatible :: Multiplicity -> Constraint
+   0 + x = x
+   x + 0 = x
+   _ + _ = ω
 
-which is discharged automatically by the compiler. Variables
-implementing this are acceptable in ``case``. So ``map`` would be of
-type.
+   0 * _ = 0
+   _ * 0 = 0
+   1 * x = x
+   x * 1 = 1
+   ω * ω = ω
+
+   _ ⩽ ω = True
+   x ⩽ y = x == y
+
+Note in particular that ``0 ≰ 1``.
+
+An important point to note, however, is that ``case_0`` is
+meaningless: it makes it possible to create values dependending on a
+value which may not exist at runtime. For instance the length of a
+list argument with multiplicity ``0``.
 
 ::
 
-  map :: (CaseCompatible p) => (a :p-> b) -> [a] :p-> [b]
+  -- Wrong!
+  badLength :: [a] :'0-> Int
+  badLength [] = 0
+  badLength (_:l) = 1 + badLength l
 
-This is harder to implement than just reusing ``p~q+1`` as a
-constraint, but is more resistant to having more multiplicities than
-just 0, 1, and ω, as is currently proposed.
+  -- Not linear! But well-typed if the above is accepted
+  f :: [a] ->. (Int, [a])
+  f l = (badLength l, l)
+
+Because we want to allow ``case_p`` for a variable ``p``, this
+creates a small complication. Which can be solved in a number of way:
+
+- Make it so that multiplicity variables are never instantiated by
+  ``0``, in particular type-application of multiplicity variables must
+  prohibit ``0``.
+- Instead of restricting variables and type applications so that
+  ``case_p`` is allowed for a variable ``p``, we can allow arbitrary
+  variables and disallow, in particular, ``case_p``.
+
+  In this case, we would have:
+
+  ::
+
+     map :: (a :(p+1)-> b) -> [a] :(p+1)-> [b]
+     map f [] = []
+     map f (a:l) = f a : (map f l)
+
+  In practice, under this situation, the type of ``map`` is probably better
+  written as
+
+  ::
+
+     map :: forall p a b q. (p ~ q + 1) => (a :p-> b) -> [a] :p-> [b]
+
+  In order to play more nicely, for instance, with explicit type
+  applications.
+
+  A benefit is that higher-order functions with no ``case`` such as
+  ``(.)`` are now capable of taking functions with multiplicity ``0`` as
+  argument.
+- A variation on the same idea is to introduce a constraint
+
+  ::
+
+    CaseCompatible :: Multiplicity -> Constraint
+
+  which is discharged automatically by the compiler. Variables
+  implementing this are acceptable in ``case``. So ``map`` would be of
+  type.
+
+  ::
+
+    map :: (CaseCompatible p) => (a :p-> b) -> [a] :p-> [b]
+
+  This is harder to implement than just reusing ``p~q+1`` as a
+  constraint, but is more resistant to having more multiplicities than
+  just 0, 1, and ω, as is currently proposed.
+- Another option is to have a type of multiplicities *excluding* ``0``
+  and have another type of extended mulitplicities for multiplicities
+  with ``0``. Note that a different ``(+)`` and ``(*)`` would have to
+  act on extended multiplicities.
 
 .. _`No annotation on case`
 
@@ -962,8 +981,7 @@ No annotation on case
 
 Instead of having ``case_p`` (see Formalism_) we could just have the
 regular ``case`` (which would correspond to ``case_1`` in this
-proposal's formalism). This simplify the implementation of
-polymorphism as we can't risk writing ``case_0``.
+proposal's formalism). This would simplify the addition of ``0``.
 
 On the other hand, doing this loses the principle that linear data
 types and unrestricted data types are one and the same. And sacrifices
