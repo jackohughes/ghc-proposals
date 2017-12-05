@@ -914,13 +914,15 @@ This is harder to implement than just reusing ``p~q+1`` as a
 constraint, but is more resistant to having more multiplicities than
 just 0, 1, and ω, as is currently proposed.
 
+.. _`No annotation on case`
+
 No annotation on case
 ~~~~~~~~~~~~~~~~~~~~~
 
-Instead of having ``case_p`` we could just have the regular ``case``
-(which would correspond to ``case_1`` in this proposal's
-formalism). This simplify the implementation of polymorphism as we
-can't risk writing ``case_0``.
+Instead of having ``case_p`` (see Formalism_) we could just have the
+regular ``case`` (which would correspond to ``case_1`` in this
+proposal's formalism). This simplify the implementation of
+polymorphism as we can't risk writing ``case_0``.
 
 On the other hand, doing this loses the principle that linear data
 types and unrestricted data types are one and the same. And sacrifices
@@ -1020,7 +1022,41 @@ linear types as arguments of dependent functions.
 Additive conjunction
 ~~~~~~~~~~~~~~~~~~~~
 
-TODO
+There is a connective of linear logic which is not included in this
+proposal: the additive conjunction, typically written ``A&B``. It
+differs from the multiplicative conjunction (written ``A⊗B`` in linear
+logic, and ``(A, B)`` in Linear Haskell) in that it has two *linear*
+projections ``π₁ :: A&B ->. A`` and ``π₂ :: A&B ->. B`` but, contrary
+to the multiplicative conjunction, only one of the two conjuncts of a
+linear ``A&B`` will be consumed (that is: consuming a value ``u`` of
+type ``A&B`` exactly once, means consuming ``π₁ u`` exactly once, or,
+*exclusively*, consuming ``π₂ u`` exactly once).
+
+It is not part of the proposal because it can be encoded:
+
+::
+
+  type a & b = forall k. Either (a ->. k) (b ->. k) ->. k
+
+What could be a benefit of having a primitive support for ``A & B``?
+Values of type ``A&B`` could be implemented as a lazy thunk rather
+than a function. But this only really matters for unrestricted values,
+but in this case, the role of lazy pair is already played by
+``Unrestricted (A, B)`` (due to our treatment of ``case``, see `No
+annotation on case`_).
+
+On the other hand we believe additive pairs of effectful computations
+to be more useful in effectful context. In which case we would use:
+
+::
+
+  type a & b = Either (a ->. ⊥) (b ->. ⊥) ->. ⊥
+
+For some effect type ``⊥`` (it could be ``type ⊥ = IOL ()`` for
+instance).
+
+So on balance, we didn't consider additive pairs to be useful enough
+to justify a dedicated implementation and syntax.
 
 Future extensions (not part of this proposal)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
