@@ -710,6 +710,7 @@ Unresolved questions:
   ``x@C _ _`` can be considered linear (it is as much a practical
   question of whether there is a reasonable way to implemet such a
   check as a theoretical question of whether we can justify it).
+- There is no account yet of linear pattern synonyms.
 
 
 Costs and Drawbacks
@@ -1125,6 +1126,8 @@ More multiplicities
 
 TODO
 
+.. _Core
+
 The Core corner
 ---------------
 
@@ -1168,6 +1171,28 @@ Inference
   linear, and if there are only unrestricted variables, it can be
   unrestricted. Is it sound to always pick the highest possible value ?
   What if there are multiplicities with variable multiplicity ?
+
+Patterns
+~~~~~~~~
+
+It is not clear yet how the following should be handled:
+
+- View patterns: linear view patterns should not be a problem as long
+  as there is only one view and that the patterns are grouped into a
+  single call to the view (otherwise the patterns would translate, in
+  Core, to several calls using the same linear variable, which is not
+  allowed). It is not clear yet that we can have a predictable
+  criterion which would allow programmers to use linear view
+  patterns without generating faulty Core. On the other hand, it would
+  be unfortunate not to have linear view patterns at all, as views
+  matter more in linear types as there are usually no projections.
+- ``@``-patterns: The pattern ``x@(Just _) -> …`` could be seen as
+  linear. After all, it is equivalent to ``Just y -> let x = Just y in
+  …``. It is not clear that we can make the linearity checking in Core
+  accept this sort of patterns (see also the Core_ section above).
+- Pattern synonym: linear pattern synonyms have not been studied
+  yet. In particular, how they ought to be type checked, when they are
+  defined. It is still unknown whether this problem is hard or easy.
 
 Syntax
 ~~~~~~
