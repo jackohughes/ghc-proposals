@@ -475,6 +475,30 @@ understood as the latter, well-typed, one. It means that is not a
 breaking change to strengthen a *first-order* regular arrow ``->``
 into a linear ``->.`` in an interface.
 
+Records constructors
+
+::
+
+   data R = R {f1 :: A1, … fn :: An}
+
+are linear constructors: ``R :: A1 ->. … ->. An ->. R``. Projections
+take an *unrestricted* record as argument: ``f1 :: R -> A1`` (because
+otherwise the other fields would not be consumed). There is an
+exception to this rule: if all the other fields are unrestricted (in
+the current proposal, it means that ``f1`` is the *only* field, but
+see `Binders with multiplicity`_), then ``f1`` is made linear:
+``f1 :: R ->. A1``. This non-uniformity is justified by the standard
+``newtype`` idiom:
+
+::
+
+  newtype Foo = Foo { unFoo :: A }
+
+which becomes much less useful in linear code if ``unFoo :: Foo ->
+A``. Our practice of linear Haskell code indicates that this feature,
+while a mere convenience, is desirable (see *e.g.* `here
+<https://github.com/tweag/linear-base/blob/e72d996b5d0600b2d5f2483b95b064d524c83e46/src/System/IO/Resource.hs#L59-L61>`_).
+
 An important point to note is that ``case_0`` is meaningless: it makes
 it possible to create values dependending on a value which may not
 exist at runtime. For instance the length of a list argument with multiplicity
@@ -760,6 +784,22 @@ except to the left of an arrow. And ``WithMult a p -> b`` means
 ::
 
   map :: (a `WithMult` p -> b) -> [a] `WithMult` p -> [b]
+
+.. _`Binders with multiplicity`
+
+Binders with multiplicity
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the paper, we wrote ``λ x :₁ A, u`` for (unannotated) linear
+functions. We don't currently provide a corresponding syntax, by lack
+of good syntax.
+
+If a syntax is provided, we could also use this syntax to have records
+with different multiplicities.
+
+::
+
+  data R = R { unrestrictedField ::(ω) A, linearField ::(1) B }
 
 Affine types rather than linear types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
