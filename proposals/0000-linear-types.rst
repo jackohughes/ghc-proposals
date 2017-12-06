@@ -612,16 +612,12 @@ this case the type of ``catchL`` would be the following:
          => RIO a -> (e -> RIO a) -> RIO a
 
 Even with this type, however, exception handling remains clumsy, and
-it may prove better to use a more explicit exception-management
+it may prove more convenient to use a more explicit exception-management
 mechanism for linear resources, such as the ``EitherT`` monad.
 
-TODO: *the following paragraph is not super clear, but I'd like to
-point out once more that we're doing libraries here*
-
-This demonstrates that the choice of primitives and of their types is a
-library question: depending on the invariants which we want to enforce
-(here resource safety, in particular timely release), and how the
-library is implemented, we may get different types.
+The choice between these two types (and corresponding implementation)
+for ``catch``, or the absence of ``catch`` altogether, is a design
+question for the library that implements a monad such as ``RIO``.
 
 Can I throw linear exceptions?
 ==============================
@@ -643,8 +639,9 @@ values not escaping a given scope. Barring a mechanism to delimit the
 scope of exceptions with linear payload, such linear exceptions may
 compromise such abstractions.
 
-To be conservative, and avoid potential such issue, we propose to
-consider exceptions as carrying only unrestricted payloads.
+To be conservative, and avoid potential such issue, we currently
+consider exceptions as only carrying unrestricted payloads in our
+library.
 
 .. _Interactions:
 
