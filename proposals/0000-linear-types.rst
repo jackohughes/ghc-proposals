@@ -437,6 +437,8 @@ Then ``xi`` has multiplicity annotation ``p*qi``. For instance
   bar (x,y) = … -- Since (,) :: a ->. b ->. (a,b), x and y have
                 -- multiplicity p
 
+TODO: deep patterns and multiple equations
+
 The type ``A->.B`` is a strengthening of ``A->B``, but the type
 checker doesn't do subtyping. It relies on polymorphism
 instead. However, following the definition above, note that
