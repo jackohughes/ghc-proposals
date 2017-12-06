@@ -794,11 +794,6 @@ cope with affine functions. Therefore the choice between these three
 systems is not a fundamental issue of this proposal. We are arguing
 for system (1), but it can easily be changed.
 
-*Technical remark: (3) is an extension of (1), but not of (2),
-because (2) requires a different typing rule for variables and data
-constructors, whereas (3) simply requires an extension of the
-multiplicity semiring*
-
 We argue against system (2) because linearity guarantees still matter,
 even if they are made more complex by exceptions. There are use-cases
 where exceptions don't matter (TODO: cite Samuel Gelinaux's example),
