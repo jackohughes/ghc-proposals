@@ -155,9 +155,9 @@ parameterized monads (see the `paper
 ::
 
   -- We need an variant of the IO monad where actions are linear
-  data IOL a
-  returnL :: a ->. IOL a
-  bindL :: IOL a ->. (a ->. IOL b) ->. IOL b
+  data RIO a
+  returnL :: a ->. RIO a
+  bindL :: RIO a ->. (a ->. RIO b) ->. RIO b
 
   -- Definition of sockets
   data State = Unbound | Bound | Listening | Connected
@@ -165,23 +165,23 @@ parameterized monads (see the `paper
   data SocketAddress
 
   -- When a (TCP) socket is created it is Unbound.
-  socket :: IOL (Socket Unbound)
+  socket :: RIO (Socket Unbound)
   -- To bind a socket to a port we take an Unbound socket, and make it
   -- Bound. The type of bindL will ensure that the socket is threaded
   -- through the computation, so that the (Socket Unbound) is not
   -- accessible: we cannot bind a socket twice.
-  bind :: Socket Unbound ->. SocketAddress -> IOL (Socket Bound)
+  bind :: Socket Unbound ->. SocketAddress -> RIO (Socket Bound)
   -- A socket must be bound to a port before we start listening
-  listen :: Socket Bound->. IOL (Socket Listening)
+  listen :: Socket Bound->. RIO (Socket Listening)
   -- A socket can accept multiple connection, therefore, the socket is
   -- returned in the same state by accept. A second, bidirectional,
   -- socket representing the connection is also returned. Both have to
   -- be used in a single-threaded fashion.
-  accept :: Socket Listening ->. IOL (Socket Listening, Socket Connected)
-  connect :: Socket Unbound ->. SocketAddress -> IOL (Socket Connected)
-  send :: Socket Connected ->. ByteString -> IOL (Socket Connected, Unrestricted Int)
-  receive :: Socket Connected -> IOL (Socket Connected, Unrestricted ByteString)
-  close :: ∀s. Socket s -> IOL ()
+  accept :: Socket Listening ->. RIO (Socket Listening, Socket Connected)
+  connect :: Socket Unbound ->. SocketAddress -> RIO (Socket Connected)
+  send :: Socket Connected ->. ByteString -> RIO (Socket Connected, Unrestricted Int)
+  receive :: Socket Connected -> RIO (Socket Connected, Unrestricted ByteString)
+  close :: ∀s. Socket s -> RIO ()
 
 .. _Specification:
 
@@ -522,52 +522,56 @@ Non-termination, exceptions & catch
 TODO: *something about the guarantees of linear functions in presence
 of non-termination and exceptions, compared to the total case*
 
-Can we write a resource-safe ``IOL`` monad with linear types despite
-the added difficulty of exception? Yes, as this section will show.
+In the paper, we gave a simplified specification of a linear ``IO``
+monad (called ``IOL``) which ignored the issue of exception for the
+sake of simplicity. Can we write a resource-safe ``RIO`` monad with
+linear types despite the added difficulty of exception? Yes, as this
+section will show.
 
 Concretely, how do we ensure that the sockets from the example API are
 always closed, even in presence of exceptions? This boils down to how
-the ``IOL`` monad is implemented. Here is the sketch of one possible
-solution.
+the ``RIO`` monad is implemented. Below is a sketch of one possible
+implementation of ``RIO`` (see `here
+<https://github.com/tweag/linear-base/blob/master/src/System/IO/Resource.hs>`_
+for a detailed implementation).
 
-TODO: *link to full implementation in linear base*
 
 First, note that since Haskell program are of type ``IO ()``, we need a
-way to run ``IOL`` in an ``IO`` computation, this is provided by the
+way to run ``RIO`` in an ``IO`` computation, this is provided by the
 function
 
 ::
 
-  runIOL :: IOL (Unrestricted a) -> IO a
+  runRIO :: RIO (Unrestricted a) -> IO a
 
-In order to achieve resource safety in presence of exception, ``runIOL``
+In order to achieve resource safety in presence of exception, ``runRIO``
 is tasked with releasing any live resource in case of exception.
 
-To implement this, ``IOL`` keeps a table of release actions, to be used
-in case of exceptions. Each resource implemented in the ``IOL``
+To implement this, ``RIO`` keeps a table of release actions, to be used
+in case of exceptions. Each resource implemented in the ``RIO``
 abstraction registers a release action in the release action table
 when they are acquired.
 
 If no exception occurs, then all resources have been released by the
-program. In case of exception, the program jumps to ``runIOL``, which
+program. In case of exception, the program jumps to ``runRIO``, which
 releases the leftover resources.
 
 An alternative strategy would be to add terminators on every resources
-acquired in ``IOL``. Release in the non-exceptional case would still
+acquired in ``RIO``. Release in the non-exceptional case would still
 be performed by the program, and the GC would be responsible for
 releasing resources in case of exception. The release in case of
 exception would be, however, less timely.
 
-Can ``IOL`` have a ``catch``?
+Can ``RIO`` have a ``catch``?
 =============================
 
-It is possible to catch exceptions inside of ``IOL``, but in order to
+It is possible to catch exceptions inside of ``RIO``, but in order to
 ensure resource safety, the type must be restricted:
 
 ::
 
   catchL :: Exception e
-         => IOL (Unrestricted a) -> (e -> IOL (Unrestricted a)) -> IOL (Unrestricted a)
+         => RIO (Unrestricted a) -> (e -> RIO (Unrestricted a)) -> RIO (Unrestricted a)
 
 That is: no linear resource previously allocated can be referenced in
 the body or the handler, and no resource allocated in the body or
@@ -575,7 +579,7 @@ handler can be returned. In effect, ``catchL`` delimits an new scope,
 in which linear resources are isolated. To implement ``catchL``, we
 simply give it its own release action table, so that in case of
 exceptions all the local resources are released by ``catchL``, as
-``runIOL`` does, before the handler is called. The original release
+``runRIO`` does, before the handler is called. The original release
 action table is then reinstated.
 
 With this implementation it is clear that capturing linear resources
@@ -590,7 +594,7 @@ this case the type of ``catchL`` would be the following:
 ::
 
   catchL :: Exception e
-         => IOL a -> (e -> IOL a) -> IOL a
+         => RIO a -> (e -> RIO a) -> RIO a
 
 Even with this type, however, exception handling remains clumsy, and
 it may prove better to use a more explicit exception-management
@@ -607,12 +611,12 @@ library is implemented, we may get different types.
 Can I throw linear exceptions?
 ==============================
 
-In the type of ``catchL`` above, the type of the handler is ``e -> IOL
+In the type of ``catchL`` above, the type of the handler is ``e -> RIO
 a``. Correspondingly, the type of the exception-throwing primitives are:
 
 ::
 
-  throwIOL :: Exception e => e -> IOL a
+  throwRIO :: Exception e => e -> RIO a
   trow :: Exception e => e -> a
 
 That is exceptions don't have linear payload.
@@ -805,7 +809,7 @@ Affine types rather than linear types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In presence of exceptions it may seem that linear functions do not
-necessarily consume their arguments. For instance, an ``IOL a`` may
+necessarily consume their arguments. For instance, an ``RIO a`` may
 abort before closing its file handles. And because of ``catch`` we are
 able to be observe this effect.
 
@@ -835,7 +839,7 @@ We argue against system (2) because linearity guarantees still matter,
 even if they are made more complex by exceptions. There are use-cases
 where exceptions don't matter (TODO: cite Samuel Gelinaux's example),
 it would arbitrary to prevent them from using the linear types that
-they need. Plus even in ``IOL`` code, where exceptions do matter,
+they need. Plus even in ``RIO`` code, where exceptions do matter,
 linear types are useful: they allow prompt deallocation as argued in
 (TODO: link to exception discussion), it can be much harder to reason
 on the lifetime of resources with explicit scopes like with
@@ -851,7 +855,7 @@ flexibility. For instance, ``catch`` can get a more fine-grained type
 
 ::
 
-  catch :: Exception e => IOL a :'A-> (e -> IOL a) :'A-> IOL a
+  catch :: Exception e => RIO a :'A-> (e -> RIO a) :'A-> RIO a
 
 So affine mutable arrays could be free variables in the body of a
 ``catch``. It's not clear yet that this finer type for ``catch`` would
@@ -1143,7 +1147,7 @@ to be more useful in effectful context. In which case we would use:
 
   type a & b = Either (a ->. ⊥) (b ->. ⊥) ->. ⊥
 
-For some effect type ``⊥`` (it could be ``type ⊥ = IOL ()`` for
+For some effect type ``⊥`` (it could be ``type ⊥ = RIO ()`` for
 instance).
 
 So on balance, we didn't consider additive pairs to be useful enough
@@ -1247,7 +1251,7 @@ It is not clear yet how the following should be handled:
 Syntax
 ~~~~~~
 
-Linear monads, like ``IOL`` in the socket motivating example will
+Linear monads, like ``RIO`` in the socket motivating example will
 require the ``do`` notation to feel native and be comfortable to
 use. There is a facility to do this ``-XRebindableSyntax`` but,
 besides the problem with ``itThenElse`` mentionned above, this has a
