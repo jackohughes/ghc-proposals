@@ -748,6 +748,18 @@ except to the left of an arrow. And ``WithMult a p -> b`` means
 
   map :: (a `WithMult` p -> b) -> [a] `WithMult` p -> [b]
 
+Lexical token of the linear arrow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We propose ``(->.)`` as a notation for the linear arrow. An
+alternative, based on the resemblance with the Unicode notation
+``(⊸)`` would be ``(-o)``.
+
+We chose ``(->.)`` because it does not change the lexer (``-o`` is not
+a token in current GHC, and ``a-o`` is currently interpreted as ``(-)
+a o``), and because it is less intrusive, and more easily ignored by
+newcomers who don't want to think about linear types.
+
 .. _`Binders with multiplicity`
 
 Binders with multiplicity
