@@ -817,6 +817,8 @@ with different multiplicities.
 
   data R = R { unrestrictedField ::(ω) A, linearField ::(1) B }
 
+.. _`Affine types`
+
 Affine types rather than linear types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1194,10 +1196,30 @@ this property is a link-time property. This generalised the
 This would allow libraries to abstract on ``main`` or to provide their
 own linearly-threaded token.
 
+.. _`More multiplicities`
+
 More multiplicities
 ===================
 
-TODO
+One central aspect of the proposed system is that it is very easy to
+extend with new multiplicities: add a multiplicity to the
+``Multiplicity`` data-type, extend the sum, product, ordering, and
+join functions.
+
+As discussed in the `Affine types`_ section, one such extra
+multiplicity is the multiplicity of affine functions (which is both
+the join of ``0`` and ``1``). The `paper
+<https://arxiv.org/abs/1710.09756>`_ also suggests a "borrowing"
+multiplicity which would allow for arbitrary usage, but be strictly
+smaller than ``ω``.
+
+It is not clear what the eventual list of multiplicity should be. The
+literature teaches us that multiplicities classify co-effects, of
+which there are many.
+
+Instead of trying to come up with a definite list of multiplicities
+which ought to be built in, we hope to be able to propose a solution
+to make it possible for libraries to define new multiplicities.
 
 .. _Core
 
