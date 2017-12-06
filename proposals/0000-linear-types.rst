@@ -216,12 +216,11 @@ Linearity is a strengthening of the contract of the regular function
 type ``A -> B``, which will be called the type of *unrestricted*
 functions.
 
-Remark: linear function ``f`` can diverge or be called on diverging
-data. It may feel weird because ``f`` will not necessarily consume its
-argument. But it's alright: the metatheory still works. One can think
-of a diverging computation as not consuming its result exactly once,
-therefore, it is vacuously true that if ``f u`` is consumed exactly
-once, then ``u`` is consumed exactly once.
+Remark: linear function ``f`` can diverge (*i.e.* either not terminate
+or throw an exception) or be called on diverging data. It may feel
+weird because ``f`` will not necessarily consume its argument. But
+it's alright: we can still make safe interface, as explained in the
+Exceptions_ section below).
 
 Polymorphism
 ~~~~~~~~~~~~
@@ -516,17 +515,33 @@ questions`_ below for a more precise description):
   an equation, we want to infer the multiplicity annotation. The
   process for this is not yet defined.
 
+.. _Exceptions
+
 Non-termination, exceptions & catch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO: *something about the guarantees of linear functions in presence
-of non-termination and exceptions, compared to the total case*
+In presence of non-termination or exceptions, linear functions may
+fail to fully consume their argument. We can think of it as: the
+consumption of the result of the function was never complete, so the
+consumption of the argument need not be either. However, because
+exceptions can be caught, a program can observe a state where a value
+``v`` has been passed to a linear function ``f`` but the call ``f v``
+has exited (with an exception) without consuming ``v``. So while, the
+guarantee provided by linear functions holds for converging
+computations, we must weaken it in case of divergence:
+
+- Attempting to consume exactly once ``f v``, when ``f`` is a linear
+  function, will consume ``v`` exactly once if the consumption of ``f
+  v`` converges, and *at most once* if it diverges.
+
+Where "consuming at most once" is defined by induction, like
+"consuming exactly once", but every sub-consumption is optional.
 
 In the paper, we gave a simplified specification of a linear ``IO``
 monad (called ``IOL``) which ignored the issue of exception for the
-sake of simplicity. Can we write a resource-safe ``RIO`` monad with
-linear types despite the added difficulty of exception? Yes, as this
-section will show.
+sake of simplicity. Can we, still, write a resource-safe ``RIO`` monad
+with linear types despite the added difficulty of exception? Yes, as
+this section will show.
 
 Concretely, how do we ensure that the sockets from the example API are
 always closed, even in presence of exceptions? This boils down to how
