@@ -21,29 +21,32 @@ This proposal introduces a notion of *linear function* to GHC. Linear
 functions are regular functions that guarantee that they will use
 their argument exactly once. Whether a function ``f`` is linear or not
 is called the *multiplicity* of ``f``. We propose a new language
-extension, ``-XLinearTypes``. When turned on, the user can enforce
-a given multiplicity for ``f`` using a type annotation.
+extension, ``-XLinearTypes``.
+
+When turned on, the user can enforce a given multiplicity for ``f``
+using a type annotation. By constraining the multiplicity of
+functions, API can enforce invariants which are inaccessible with
+current Haskell.
 
 The theory behind this proposal has been fully developed in a peer
 reviewed conference publication that will be presented at POPL'18. See
-the `extended version of the paper
-<https://arxiv.org/abs/1710.09756>`_.
+the `extended version of the paper <https://arxiv.org/abs/1710.09756>`_.
 
 Motivation
 ----------
 
-Haskell, along with a few other languages, heralded the notion of
-*type safety* into mainstream programming. That is, *well-typed
-programs do not go wrong*. Well-typed programs do sometimes crash, or
-fail to terminate, but they do not segfault. Now, the system resources
-that these programs manipulate have changing states, need to be
-initialized before use and conversely, must be freed in a timely
-manner. We want not just type safety in Haskell, but also *resource
-safety*. We want well-typed programs that do not go wrong in the sense
-that they might still crash, but they do not rewind the state of I/O
-resources, these resources are never used before they are initialized,
-are guaranteed to be freed by the time control flow exits user defined
-scopes, and never used after being freed.
+Type safety enforces that *well-typed program do not go
+wrong*. Programs will sometimes crash, or fail to terminate, but they
+do not segfault. Through well-chosen abstractions, types can be used
+to enforce further properties, such as trees being
+well-balanced. Among such properties, is *resource safety*: system
+resources that these programs manipulate have changing states, need to
+be initialized before use and conversely, must be freed in a timely
+manner. We want abstractions that enforce that programs do not rewind
+the state of I/O resources, these resources are never used before they
+are initialized, are guaranteed to be freed by the time control flow
+exits user defined scopes, and never used after being freed. Resource
+safety is hard to enforce with current Haskell.
 
 This proposal hits another goal as a side benefit. In Haskell, impure
 computations are typically structured as a sequence of steps, be it in
@@ -60,10 +63,24 @@ Linear types enable better solutions to both problems:
 2. using types to control the scope of effects without forcing an
    unnatural sequencing of mutually independent effects.
 
-The following example illustrates both points. Using linear types, we
-express a pure API for mutable array construction (the type ``a ->. b``
-is the type of linear functions, ``Unrestricted`` is such that
-``Unrestricted a ->. b`` is isomorphic to ``a -> b``):
+In our `paper <https://arxiv.org/abs/1710.09756>`_, which should be
+read to fully appreciate this proposal, we have worked out several
+examples in details. @gelisam also designed `a linear API
+<https://github.com/gelisam/linear-examples>`_ for `3d-printable
+models
+<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_.
+In `this blog post
+<http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_,
+@facundominguez shows how linear types help use Java references from
+Haskell.
+
+Let us, nevertheless, briefly discuss some examples. The following
+example (summarized from the
+`paper<https://arxiv.org/abs/1710.09756>`_) illustrates points (1)
+and (2) above. Using linear types, we express a pure API for mutable
+array construction (the type ``a ->. b`` is the type of linear
+functions, ``Unrestricted`` is such that ``Unrestricted a ->. b`` is
+isomorphic to ``a -> b``):
 
 ::
 
@@ -132,7 +149,8 @@ tracking the lifecycle of I/O resources has been a vexing issue for
 many network services. Creating a variant of the BSD socket API that
 statically guarantees ordering constraints between API calls becomes
 possible without the overhead of heavyweight encodings based *e.g.* on
-parameterized monads.
+parameterized monads (see the `paper
+<https://arxiv.org/abs/1710.09756>`_ for more on this example).
 
 ::
 
@@ -164,12 +182,6 @@ parameterized monads.
   send :: Socket Connected ->. ByteString -> IOL (Socket Connected, Unrestricted Int)
   receive :: Socket Connected -> IOL (Socket Connected, Unrestricted ByteString)
   close :: ∀s. Socket s -> IOL ()
-
-The `paper <https://arxiv.org/abs/1710.09756>`_ mentions other use
-cases as well, such as efficient and safe data serialization as well
-as using types to statically enforce interaction protocols between
-communicating processes (*e.g.* via RPC calls). GHC users will no
-doubt invent many more use cases over time.
 
 .. _Specification:
 
