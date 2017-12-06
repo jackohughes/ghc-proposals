@@ -882,10 +882,15 @@ we have abstracted this pattern away in the purely linear case. We
 invite the community to come up with good examples of such use of
 affine types.
 
+While it is easy to make system (3), and we believe it would have
+benefits, we haven't included it in the proposal, and rather propose
+to stage it for a later proposal (see also `More multiplicities`_
+below), and keep, in this proposal, the minimal system which addresses
+the motivations.
+
 TODO
 
-- Easy to add affine types, but we prefer it to be staged
-- Discuss Roman's encoding
+- Discuss Roman's encoding?
 
 Subtyping instead of polymorphism
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
