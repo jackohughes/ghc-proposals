@@ -849,14 +849,16 @@ for system (1), but it can easily be changed.
 
 We argue against system (2) because linearity guarantees still matter,
 even if they are made more complex by exceptions. There are use-cases
-where exceptions don't matter (TODO: cite Samuel Gelinaux's example),
+where exceptions don't matter (such as @gelisam's `3D-printable models
+<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_),
 it would arbitrary to prevent them from using the linear types that
 they need. Plus even in ``RIO`` code, where exceptions do matter,
 linear types are useful: they allow prompt deallocation as argued in
-(TODO: link to exception discussion), it can be much harder to reason
-on the lifetime of resources with explicit scopes like with
-``bracket`` (see (TODO: link to Facundo's blog post) for an example
-where scopes have proved to be unsatisfactory).
+the section on Exceptions_, it can be much harder to reason on the
+lifetime of resources with explicit scopes like with ``bracket`` (see
+the `inline-java use-case
+<http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_ for an
+example where scopes have proved to be unsatisfactory).
 
 There is, nonetheless, value to affine types. There are some
 applications where affine types are enough to enforce invariants (such
