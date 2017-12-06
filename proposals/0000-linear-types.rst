@@ -192,6 +192,11 @@ We introduce a new language extension. Types with a linearity
 specification are syntactically legal anywhere in a module if and only
 if ``-XLinearTypes`` is turned on.
 
+This proposal only introduces new type for functions, it does not
+affect the run-time system, and does not enforce resource-safety by
+itself. Linear types are meant to be used in the design of
+abstractions, in particular to enforce resource safety.
+
 Definition
 ~~~~~~~~~~
 
