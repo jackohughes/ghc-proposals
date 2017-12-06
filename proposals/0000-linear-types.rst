@@ -439,6 +439,12 @@ Then ``xi`` has multiplicity annotation ``p*qi``. For instance
 
 TODO: deep patterns and multiple equations
 
+GHC supports unboxed datatypes such as ``(#,#)`` (unboxed pair) and
+``(#|#)`` (binary unboxed sum). The proposal treats them as their boxed
+equivalent (``(,)`` and ``Either``, respectively, for these two
+examples): the constructors are linear (and case can have various
+multiplicities).
+
 The type ``A->.B`` is a strengthening of ``A->B``, but the type
 checker doesn't do subtyping. It relies on polymorphism
 instead. However, following the definition above, note that
