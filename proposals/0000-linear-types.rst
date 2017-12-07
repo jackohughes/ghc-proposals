@@ -205,7 +205,8 @@ exactly once implies that ``u`` is *consumed exactly once* (defined
 as follows).
 
 - Consuming a value of a data type exactly once means evaluating it to
-  head normal form, then consuming its fields exactly once
+  head normal form exactly once, then consuming its fields exactly
+  once
 - Consuming a function exactly once means applying it and consuming
   its result exactly once
 
@@ -926,6 +927,18 @@ this program to the well-typed η-expansion
 
   g :: A -> B
   g x = f x
+
+This also work at higher arity, including mixed of linear and
+non-linear arguments:
+
+::
+
+  f' :: A ->. B -> C ->. D
+
+  g :: A -> B -> C -> D
+  g = f
+  -- is interpreted as:
+  -- g x y z = f x y z
 
 Zero as a multiplicity
 ~~~~~~~~~~~~~~~~~~~~~~
