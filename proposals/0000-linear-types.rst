@@ -457,6 +457,8 @@ Then ``xi`` has multiplicity annotation ``p*qi``. For instance
   bar (x,y) = … -- Since (,) :: a ->. b ->. (a,b), x and y have
                 -- multiplicity p
 
+.. _Patterns
+
 Deep patterns & multiple equations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -535,6 +537,8 @@ GHC supports unboxed data types such as ``(#,#)`` (unboxed pair) and
 equivalent (``(,)`` and ``Either``, respectively, for these two
 examples): the constructors are linear (and case can have various
 multiplicities).
+
+.. _Subtyping
 
 Subtyping
 ~~~~~~~~~
@@ -1352,7 +1356,187 @@ The Core corner
 to GHC's Core intermediate language in order to accommodate the new
 feature of this proposal*
 
-TODO
+The bulk of the modifications to Core is described in §3 of the `paper
+<https://arxiv.org/abs/1710.09756>`_.
+
+Changes to the type system
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here is a summary of the changes included in the paper:
+
+- All variables have an attached multiplicity (just like they have an
+  attached type)
+- Type variables can be of kind ``Multiplicity``
+- The arrow type constructor has an additional argument (the
+  multiplicity ``p`` in ``(:p->)``)
+- Data constructors have mulitplicities attached to their fields
+- It seems that, because of the worker/wrapper split in the strictness
+  analysis, Core will need unboxed tuples with multiplicity-annotated
+  fields. Even if there is no surface syntax for these in the
+  proposal.
+
+Here are the changes and interactions which were omitted in the paper:
+- In the paper the only polymorphism described is polymorphism in
+  multiplicities, there is no added difficulty due to general type
+  polymorphism.
+- The paper does not have existentially quantified type
+  variables. They do not cause any additional difficulty.
+- The paper uses a traditional construction for ``case``, but Core's
+  is a bit more complex: in Core, ``case`` is of the form ``case u as
+  x of { <alternatives> }`` where ``x`` represents the head normal
+  form of ``u``. Moreover one of the alternative can be ``WILDCARD ->
+  <rhs>`` (where ``WILDCARD`` is Core's representation of ``_``). The
+  simplest way to type check this extra binder, is to type ``case u as
+  x of { <alternatives> }`` as ``let x = u in case x of {
+  <alternatives> }`` (using, in the latter form, the simplified
+  ``case`` from the paper). Without any modification, however, this
+  typing rule may prove to simplistic. It is not entirely clear how to
+  make the surface language desugar to well-typed terms with this rule
+  (see Patterns_). It also has consequences on `Core
+  transformations`_. See also `Unresolved questions`_
+
+There is no change to the term syntax, only the types and the linter
+are affected.
+
+Note: the constraint arrow ``=>`` is interpreted as an unrestricted
+arrow (*i.e.* of multiplicity ω).
+
+.. _`Core transformations`
+
+Effect on transformations and passes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+An indication that the effects of linear types on Core transformations
+should be small is that GHC must already preserve linearity: in the
+case of ``ST`` and ``IO``, a token is passed around which must be used
+linearly. At the surface level, linearity is enforced by the abstract
+interface, but it is manifest in Core, so core must preserver their
+linearity. Therefore, any interaction between linearity and Core
+transformations are due either to new patterns which couldn't be
+previously expressed or limitation of the type-checking.
+
+Below are the transformations which we have analysed so far:
+
+η-reduction
+  Because the η-expansion of a linear function can be an unrestricted
+  function, it is not, in general, safe, to η-reduce functions
+  (η-expasions are even added to the compiler: see Subtyping_). GHC
+  already does not perform η-reduction carelessly, so we need to add
+  an extra condition for η-reduction to be successful.
+
+Inlining
+  Suppose we have
+
+  ::
+
+    let_1 x = u in if b then … x … else … x …
+
+  GHC may try to line ``x`` at the some (but not necessarily all) of
+  the use sites. For instance, GHC may try to reduce to
+
+  ::
+
+    let_1 x = u in if b then … u … else … x …
+
+  But this is not recognised as linear under the current typing rules
+  (because, among other things ``u`` counts as having been used twice,
+  once in the right-hand-side of the let, and once in the ``then``
+  branch).
+
+  So, under the current typing rules, linear lets could be inlined at
+  *every* site (this is a form of β-reduction) or none at all. But, of
+  course, this inlining transformation does not change the meaning of
+  the program, so it is still valid. If th
+
+Common Subexpression Elimination (CSE)
+  When encountering an expression of the form
+
+  ::
+
+    let x = u in e
+
+  the rewrite rule ``u --> x`` is added to the environment when
+  analysing ``e``.
+
+  This can't safely be done in general for linear lets:
+
+  ::
+
+    let_1 x = u in e
+
+  There are several potential strategies:
+
+  - Ignore linear lets for the purpose of CSE. After all, we are
+    unlikely to find many occurrences of ``u`` if ``u`` is used in a
+    ``let_1``.
+  - Try and see if we can replace the ``let_1`` by a ``let_ω`` (that
+    is, if ``u`` only has unrestricted type variables). And continue
+    with ``u --> x`` if the ``let_1`` was successfully promoted to
+    ``let_ω``.
+  - Do not change the ``let_1`` immediately, but when an occurrence of
+    ``u`` is encountered, lazily promote the ``let_1`` to a ``let_ω``
+    if needed (if we have resolved the issue with inlining, we may not
+    always need to promote the ``let_1``). It is not completely clear
+    how to pursue this option.
+
+Case-binder optimisations:
+  GHC will try to transform
+
+  ::
+
+     case_1 x of y {
+       (p:ps) -> (case_1 x of …) (case_1 x of …)}
+
+   into
+
+   ::
+
+     case_1 x of y {
+       (p:ps) -> let x_?? = y in (case x of …) (case x of …)}
+
+   This transformation, similar to CSE, is valid only because we are
+   calling for a ``case_1`` of some unrestricted variable. This is
+   difficult for several reasons:
+
+   - Under the naive typing rule for case-binders proposed above, it
+     is not even correct to use ``y`` inside an alternative: it has
+     been consumed by being the scrutinee.
+   - Even if we have a more flexible typing rule for ``let`` (see
+     below), it remains that ``y`` has multiplicity ``1`` and that for
+     the right-hand side of the alternative to type-check, we actually
+     need ``let_ω x = y in …``, which is not well-typed.
+
+   Like for CSE, we can either prevent this optimisation for linear
+   cases. Or we can try to promote the ``case_1`` to a ``case_ω``, and
+   perform the transformation only if it's successful.
+
+Float-in & float-out
+  These transformation move let-bindings inside or outside
+  λ-abstractions. They are safe in presence of linear types.
+
+Note that the issues and interactions were illustrated with examples
+of multiplicity 1, but the same arguments works for any multiplicity
+which are not ω (in particular multiplicity variables).
+
+Advanced typing rule for ``let``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There is no known account of a type-system which would account for the
+inlining transformation. Let alone of one which would not require too
+much engineering. But the idea is, conceptually, simple enough: from
+the point of view of usage, ``x`` and ``u`` must be considered the
+same (since ``u`` may contain several variables with their own
+multiplicity, it requires more than a union-find structure).
+
+Provided we can give a precise description of such a system, it can be
+used to make general inlining well-typed, and it would resolve the
+rigidity of the case-binder typing rule discussed above.
+
+However, it may be worth noticing a potentially surprising behaviour:
+we may use, as an optimisation, the fact that a ``let`` is linear to
+avoid saving its thunk upon evaluation as we are not going to force it
+again. But the case-binder does not have this property:
+computationally does not quite behave like a linear ``let``.
 
 .. _`Unresolved questions`
 
@@ -1456,7 +1640,7 @@ could define a function ``a ->. (a,a)`` generically with this).
   case_1 o as y of { Just x -> Just (x,y) }
 
 So we need a simple story (Core needs to stay fairly simple) for the
-``as`` clause of linear cases.
+case-binder of linear cases.
 
 The easiest thing to do would be to type ``case_p u as y of { … }`` as
 ``let_p y = u in case y of { … }``. But this may not be a good idea:
@@ -1475,6 +1659,8 @@ typing.
 Solving this will have user-facing implications, in particular regarding
 which view patterns and ``@``-patterns are available in linear
 functions.
+
+See also the sections Patterns_ and Core_.
 
 Implementation Plan
 -------------------
