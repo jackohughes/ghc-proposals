@@ -587,19 +587,43 @@ A``. Our practice of linear Haskell code indicates that this feature,
 while a mere convenience, is desirable (see *e.g.* `here
 <https://github.com/tweag/linear-base/blob/e72d996b5d0600b2d5f2483b95b064d524c83e46/src/System/IO/Resource.hs#L59-L61>`_).
 
+.. _Inference
+
 Inference
 ~~~~~~~~~
 
-TODO
+Because of backwards compatibility, we initially chose the following
+strategy: when the type of a function is not constrained by given
+constraints, we infer it to have multiplicity ω.
 
-There are unresolved issues regarding inference (see `Unresolved
-questions`_ below for a more precise description):
+Experience shows that this sometimes yield very confusing error messages
+where perfectly valid code is rejected:
 
-- There is no account of multiplicity inference. A better
-  understanding would make inference more predictable.
-- For ``let`` bindings and ``case`` expressions which are not part of
-  an equation, we want to infer the multiplicity annotation. The
-  process for this is not yet defined.
+::
+
+  type family L x
+  type instance L Int = A ->. A
+
+  f :: L x -> x
+
+  u :: Int
+  u = f (\x -> x)
+
+While the identity function is indeed linear, because the resolution
+of the type family (``L Int ~ Int``) is delayed in GHC, ``\x -> x`` is
+considered to have no given type, and is inferred to have a non-linear
+type, and is refused by the type-checker.
+
+We therefore need a more refined strategy, to avoid surprising
+behaviour like the above. We do not expect it to be too hard to
+implement a better strategy, but we don't have a specification yet.
+
+A more profound difficulty exists for inference: for explicit ``let``
+bindings and ``case`` expressions (*i.e.* which are not generated from
+the desugaring of an equation but are written as ``let``, ``where``,
+or ``case`` in the surface syntax), we want to infer the multiplicity
+annotation. The process for this is not yet defined (see `Unresolved
+questions`_ below for a more precise description of this issue).
 
 .. _Exceptions
 
@@ -1341,7 +1365,8 @@ Inference
 - There is no systematic account of type inference. Can it be made
   predictable when a type annotation is required? For compatibility
   reasons, we want to infer unrestricted arrows conservatively, but
-  experience shows that it can result in very surprising type errors.
+  experience shows that it can result in very surprising type
+  errors. See Inference_ for more details.
 
 - In the formalism, case expressions are indexed by a multiplicity:
   ``case_p`` (and similarly ``let_p``). In the surface language, we
