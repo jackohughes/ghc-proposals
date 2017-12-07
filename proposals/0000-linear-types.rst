@@ -1209,7 +1209,7 @@ Future extensions (not part of this proposal)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Toplevel-linear binders
-=======================
++++++++++++++++++++++++
 
 Something that hasn't been touched up by this proposal is the idea of
 declaring toplevel linear binders
@@ -1230,7 +1230,7 @@ own linearly-threaded token.
 .. _`More multiplicities`
 
 More multiplicities
-===================
++++++++++++++++++++
 
 One central aspect of the proposed system is that it is very easy to
 extend with new multiplicities: add a multiplicity to the
