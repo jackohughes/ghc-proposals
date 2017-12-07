@@ -502,8 +502,8 @@ linear patterns.
 
 It would be convenient for the programmer, but with the current typing
 rules for Core, the generated Core would not be well-typed as the
-second argument would be seen as non-linear (see the Core_ section
-below for more details).
+second argument would be seen as non-linear (see the Core_ and
+`Unresolved questions`_ section below for more details).
 
 Wildcard patterns are especially useful in multiple-equations
 
