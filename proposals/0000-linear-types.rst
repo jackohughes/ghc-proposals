@@ -373,10 +373,10 @@ than define them, such as:
    data Unrestricted a where
      Unrestricted :: a -> Unrestricted a
 
-.. _Formalism:
+.. _Multiplicities:
 
-Formalism
-~~~~~~~~~
+Multiplicities
+~~~~~~~~~~~~~~
 
 So far, we have considered only two multiplicities ``1`` and
 ``ω``. But the metatheory works with any so-called
@@ -384,7 +384,7 @@ sup-semi-lattice-ordered semi-ring (without a 0) of
 multiplicities. That is: there a 1, a sum and a product with the usual
 distributivity laws, a (computable) order compatible with the sum and
 product, such that each pair of multiplicities has a (computable)
-join. Even if there is only three multiplicities in this proposal, the
+join. Even if there is only two multiplicities in this proposal, the
 proposal is structured to allow future extensions.
 
 Here is the definition of sum, product and order for this proposal's
@@ -455,13 +455,22 @@ Then ``xi`` has multiplicity annotation ``p*qi``. For instance
   bar (x,y) = … -- Since (,) :: a ->. b ->. (a,b), x and y have
                 -- multiplicity p
 
+Deep patterns & multiple equations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 TODO: deep patterns and multiple equations
 
-GHC supports unboxed datatypes such as ``(#,#)`` (unboxed pair) and
+Unboxed data types
+~~~~~~~~~~~~~~~~~~
+
+GHC supports unboxed data types such as ``(#,#)`` (unboxed pair) and
 ``(#|#)`` (binary unboxed sum). The proposal treats them as their boxed
 equivalent (``(,)`` and ``Either``, respectively, for these two
 examples): the constructors are linear (and case can have various
 multiplicities).
+
+Subtyping
+~~~~~~~~~
 
 The type ``A->.B`` is a strengthening of ``A->B``, but the type
 checker doesn't do subtyping. It relies on polymorphism
@@ -483,6 +492,9 @@ opportunity is easily detected and the former definition of ``g`` is
 understood as the latter, well-typed, one. It means that is not a
 breaking change to strengthen a *first-order* regular arrow ``->``
 into a linear ``->.`` in an interface.
+
+Records and projections
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Records constructors
 
@@ -507,6 +519,11 @@ which becomes much less useful in linear code if ``unFoo :: Foo ->
 A``. Our practice of linear Haskell code indicates that this feature,
 while a mere convenience, is desirable (see *e.g.* `here
 <https://github.com/tweag/linear-base/blob/e72d996b5d0600b2d5f2483b95b064d524c83e46/src/System/IO/Resource.hs#L59-L61>`_).
+
+Inference
+~~~~~~~~~
+
+TODO
 
 There are unresolved issues regarding inference (see `Unresolved
 questions`_ below for a more precise description):
@@ -945,7 +962,7 @@ Zero as a multiplicity
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The implementation, and the usage-based definition of linearity in the
-Formalism_ section, use a ``0``. It is currently kept out of the
+Multiplicities_ section, use a ``0``. It is currently kept out of the
 actual multiplicities because we have no use case for this. But it
 would not be hard to provide. Additionally, ``0`` has been used by
 `Conor McBride
@@ -1050,7 +1067,7 @@ creates a small complication. Which can be solved in a number of way:
 No annotation on case
 ~~~~~~~~~~~~~~~~~~~~~
 
-Instead of having ``case_p`` (see Formalism_) we could just have the
+Instead of having ``case_p`` (see Multiplicities_) we could just have the
 regular ``case`` (which would correspond to ``case_1`` in this
 proposal's formalism). This would simplify the addition of ``0``.
 
