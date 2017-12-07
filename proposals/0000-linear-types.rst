@@ -345,7 +345,8 @@ functions, a number of functions of ``base`` can get a more precise
 type. However, for pedagogical reason, to prevent linear types from
 interfering with newcomers' understanding the ``Prelude``, this
 proposal does not modify ``base``. Instead we will release a library
-exposing the stronger types for ``base`` functions.
+exposing the stronger types for ``base`` functions. This effort has
+been started `here <https://github.com/tweag/linear-base>`_.
 
 This library will not redefine any type, and instead takes advantage
 of the fact that data types in ``base`` are linear by default to
