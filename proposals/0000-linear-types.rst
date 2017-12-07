@@ -402,7 +402,7 @@ multiplicities (in Haskell pseudo-syntax):
    x ⩽ y = x == y
 
 Every variable in the environment is annotated with its multiplicity,
-which constrains how it can be used. A variable usage is said to be
+which constrains how it can be used. A variable *usage* is said to be
 of multiplicity ``p``, or ``0``, in a term ``u`` if:
 
 - ``p=0`` and ``x`` is not free in ``u``
@@ -413,7 +413,9 @@ of multiplicity ``p``, or ``0``, in a term ``u`` if:
 
 A variable's usage is correct if it is smaller than or equal to the
 multiplicity annotation of the variable. Incorrect usage results in a
-type error.
+type error. This definition if close to the intended implementation of
+multiplicities, the `paper <https://arxiv.org/abs/1710.09756>`_ has a
+more declarative definition.
 
 The multiplicity of a variable introduced by a λ-abstraction is taken
 from the surrounding typing information (typically a type annotation
