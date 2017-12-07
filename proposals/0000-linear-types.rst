@@ -992,8 +992,9 @@ So affine mutable arrays could be free variables in the body of a
 actually be useful: the same affine free variable could not appear
 both in the body and the handler. The only instance of such a pattern
 which we've found documented so far, is in the Alms programming
-language, and the ``catch`` is merely used to perform clean-up and
-re-raise (TODO check that it reraises + ref. in Jesse Tov's thesis),
+language, where the ``catch`` is used to perform clean-up, *i.e.*
+close a resource, (see `Jesse Tov's thesis p67
+<http://users.eecs.northwestern.edu/~jesse/pubs/dissertation/tov-dissertation-screen.pdf#figure.4.7>`_),
 we have abstracted this pattern away in the purely linear case. We
 invite the community to come up with good examples of such use of
 affine types.
