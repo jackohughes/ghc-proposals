@@ -460,7 +460,72 @@ Then ``xi`` has multiplicity annotation ``p*qi``. For instance
 Deep patterns & multiple equations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-TODO: deep patterns and multiple equations
+Type-checking deep patterns naturally extends the simple patterns
+above. For instance in
+
+::
+
+  f :: Maybe (a, b) ->. …
+  f (Just (x,y)) = …
+
+since the type annotation on the first argument is linear, the outer
+pattern is type-checked as a ``case_1``:
+
+::
+
+  f mxy = case_1 mxy of
+    Just xy -> …
+
+Therefore, the generated intermediate variable ``xy`` has multiplicity
+1, therefore, the inner pattern is elaborated as a ``case_1`` (that is
+the same multiplicity as the intermediate variable).
+
+::
+
+  f mxy = case_1 mxy of
+    Just xy -> case_1 xy of
+      (x, y) -> …
+
+Unresolved questions
+++++++++++++++++++++
+
+It is not currently clear whether we can accept wildcard patterns in
+linear patterns.
+
+::
+
+  m :: (a->a) -> Maybe a ->. Maybe a
+  m f (Just x) = Just (f x)
+  m f y        = y
+
+It would be convenient for the programmer, but with the current typing
+rules for Core, the generated Core would not be well-typed as the
+second argument would be seen as non-linear (see the Core_ section
+below for more details).
+
+Wildcard patterns are especially useful in multiple-equations
+
+::
+
+  mix :: [a] ->. [a] ->. [a]
+  mix [] ys = ys
+  mix xs [] = xs
+  mix (x:xs) (y:ys) = x:y:(mix xs ys)
+
+If this sort of code is allowed (that is, the generated code is
+accepted in Core), then multiple-equations and deep pattern pose no
+difficulty. Otherwise the surface language will have to include a
+criterion which makes the above set of equation unsound, while
+accepting the code below:
+
+::
+
+  mix :: [a] ->. [a] ->. [a]
+  mix [] ys = ys
+  mix (x:xs) [] = x:xs
+  mix (x:xs) (y:ys) = x:y:(mix xs ys)
+
+It is not clear how to define such a criterion.
 
 Unboxed data types
 ~~~~~~~~~~~~~~~~~~
