@@ -1005,9 +1005,52 @@ to stage it for a later proposal (see also `More multiplicities`_
 below), and keep, in this proposal, the minimal system which addresses
 the motivations.
 
-TODO
+Remarks on the relation between affine and linear types
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-- Discuss Roman's encoding?
+As noted by @rleshchinskiy, we can recover, in a limited case, the
+guarantees of linear types in system (2) via an encoding. The idea is
+to introduce a type-level name for each resource that we want
+linearity guarantees for (this requires to introduce the resource in
+continuation-passing). Here is what it would look like for the socket
+example:
+
+::
+
+  data Socket (n :: *) (s :: State)
+  data Closed (n :: *)
+
+  socket :: RIO (forall n. Socket n 'Unbound :'A-> RIO (Unrestricted a, Closed s)) :'A -> RIO (Unrestricted a)
+  […]
+  close :: Socket n s -> RIO (Closed s)
+
+This, however, requires to release resources in some sort of a
+stack-like discipline: if resources are released in an unbounded
+out-of-order manner, we can't retain the relation between the resource
+names and the type of the expression. Therefore we cannot have, say, a
+priority queue of sockets with the above affine API. Whereas linearly
+typed priority queues are perfectly fine.
+
+Conversely, affine types can be encoded in linear types (folklore in
+the literature):
+
+::
+
+  type Affine a = forall k. Either (a ->. k) k ->. k
+
+  drop :: Affine a ->. ()
+  drop x = x $ Right ()
+
+Unfortunately, with this encoding, it is still not easy to give the following
+type to ``catch``:
+
+::
+
+  catch :: Exception e => Affine (RIO a) ->. Affine (e -> RIO a) -> RIO a
+
+Therefore, despite the tantalising proximity, system (1) and (2) are
+different in practice.
+
 
 Subtyping instead of polymorphism
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
