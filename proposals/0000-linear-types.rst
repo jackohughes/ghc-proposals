@@ -21,12 +21,13 @@ This proposal introduces a notion of *linear function* to GHC. Linear
 functions are regular functions that guarantee that they will use
 their argument exactly once. Whether a function ``f`` is linear or not
 is called the *multiplicity* of ``f``. We propose a new language
-extension, ``-XLinearTypes``.
+extension, ``-XLinearTypes``, to allow users to annotate functions
+with their multiplicities.
 
 When turned on, the user can enforce a given multiplicity for ``f``
 using a type annotation. By constraining the multiplicity of
-functions, API can enforce invariants which are inaccessible with
-current Haskell.
+functions, users can create library API's that enforce invariants not
+otherwise enforceable with current Haskell.
 
 The theory behind this proposal has been fully developed in a peer
 reviewed conference publication that will be presented at POPL'18. See
@@ -35,18 +36,23 @@ the `extended version of the paper <https://arxiv.org/abs/1710.09756>`_.
 Motivation
 ----------
 
-Type safety enforces that *well-typed program do not go
-wrong*. Programs will sometimes crash, or fail to terminate, but they
-do not segfault. Through well-chosen abstractions, types can be used
-to enforce further properties, such as trees being
-well-balanced. Among such properties, is *resource safety*: system
-resources that these programs manipulate have changing states, need to
-be initialized before use and conversely, must be freed in a timely
-manner. We want abstractions that enforce that programs do not rewind
-the state of I/O resources, these resources are never used before they
-are initialized, are guaranteed to be freed by the time control flow
-exits user defined scopes, and never used after being freed. Resource
-safety is hard to enforce with current Haskell.
+Type safety enforces that *well-typed programs do not go wrong*.
+Programs will sometimes crash, or fail to terminate, but they do not
+segfault. Through well-chosen abstractions, types can be used to
+enforce further properties, such as trees being well-balanced. One
+such further property is *resource safety*, namely that,
+
+1. system resources only change state through legal transitions from
+   one state to another,
+2. state transitions happen in a timely manner.
+
+For example, a file handle transitions from open to closed, but never
+from closed to open. We want to enable users to program file I/O API's
+that statically enforce that all I/O happens only on open handles,
+never on closed handles (*no use-after-free*). Moreover, we want such
+API's to enable early closing of handles by the user (*prompt
+deallocation*). Use-after-free and prompt deallocation are hard to
+enforce with current Haskell.
 
 This proposal hits another goal as a side benefit. In Haskell, impure
 computations are typically structured as a sequence of steps, be it in
@@ -54,7 +60,7 @@ the ``IO`` monad or in ``ST``. The latter in particular serves to
 precisely control which effects are possible and the scope within
 which they are visible. But using monads to write "locally impure"
 computations that still look pure from the outside has an unfortunate
-consequence: computations are oversequentialized, making it hard for
+consequence: computations are over-sequentialized, making it hard for
 the compiler to recover lost opportunities for parallelism.
 
 Linear types enable better solutions to both problems:
@@ -63,125 +69,45 @@ Linear types enable better solutions to both problems:
 2. using types to control the scope of effects without forcing an
    unnatural sequencing of mutually independent effects.
 
-In our `paper <https://arxiv.org/abs/1710.09756>`_, which should be
-read to fully appreciate this proposal, we have worked out several
-examples in details. @gelisam also designed `a linear API
-<https://github.com/gelisam/linear-examples>`_ for `3d-printable
-models
-<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_.
-In `this blog post
-<http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_,
-@facundominguez shows how linear types help use Java references from
-Haskell.
+In the `companion paper <https://arxiv.org/abs/1710.09756>`_ to this
+proposal, we have worked out in detail several use cases for linear
+types. We argue that linear types have far ranging consequences for
+the language. Salient use cases from the paper include:
 
-Let us, nevertheless, briefly discuss some examples. The following
-example (summarized from the
-`paper<https://arxiv.org/abs/1710.09756>`_) illustrates points (1)
-and (2) above. Using linear types, we express a pure API for mutable
-array construction (the type ``a ->. b`` is the type of linear
-functions, ``Unrestricted`` is such that ``Unrestricted a ->. b`` is
-isomorphic to ``a -> b``):
+* Safe mutable arrays with a safe *non-copying* `freeze` operation.
+* Off-heap memory that enables allocating, reading, writing and
+  freeing memory safely, without use-after-free or double-free errors.
+  This is an important use case for latency sensitive systems
+  programming, where moving objects off-heap, out of the purview of
+  the GC, is beneficial for avoiding long GC pauses and achieving
+  predictable latencies.
+* Safe zero-copy data (de)serialization, a notoriously difficult
+  endeavour that is in fact so error prone without linear types that
+  most production systems today typically avoid it.
+* Safe and prompt handling of system resources like files, sockets,
+  database handles etc.
+* Statically enforced communication protocols between distributed
+  processes communicating via RPC.
 
-::
+The keyword in the above examples is **safety**. This proposal is not
+about improving the performance of the compiler's generated code. It
+is not about new runtime support. It is about enabling programmers to
+build safer API's that enforce stronger properties, thereby bringing
+*possible* but otherwise high-risk optimization techniques, like
+managing memory manually, into the realm of the *feasible*.
 
-  data MArray a
-  data Array a
-  newMArray :: Int -> (MArray a ->. Unrestricted b) ->. Unrestricted b
-  write :: MArray a ->. (Int, a) -> MArray a
-  read :: MArray a ->. Int -> (MArray a, Unrestricted a)
-  freeze :: MArray a ->. Unrestricted (Array a)
+The use cases put forth above are diverse and pervasive. Yet they are
+but a few examples of the safety properties that can be conveniently
+captured with linear types. Here are a few more:
 
-The types in this interface ensure that values of type ``MArray a``
-are always *unique* references to a mutable array. As a consequence,
-mutations cannot be observed by the context, because references
-aliasing each other is ruled out. Referencial transparency is
-preserved.
-
-The two main benefits of this API are:
-
-- reads and writes on distinct arrays are not sequenced. This means
-  that the compiler is free to reorder them, *e.g.* as an optimisation.
-  We could go further and introduce `fork-join parallelism
-  <https://en.wikipedia.org/wiki/Fork%E2%80%93join_model>`_ primitives
-  where disjoint slices can be mutated in parallel, *e.g.* by
-  different cores.
-- The ``freeze`` function consumes the unique ``MArray`` by turning it
-  into a non-unique immutable array. ``freeze`` does not, in fact,
-  copy the array, it just changes its (static!) state. In the ``ST``
-  implementation of ``MArray``, the primitive is ``unsafeFreeze``
-  because it is up to the programmer to promise that they won't ever
-  mutate the frozen ``MArray`` again. This shrinks the trusted code
-  base. Or to put it another way: the user can now write more
-  efficient code even when keeping to safe primitives only.
-
-We argue that linear types have far ranging consequences for the
-language. Systems programming with quasi real-time requirements can
-often benefit from easing pressure on the GC by taking long-lived
-objects out of the GC-managed heap entirely. Fewer long-lived objects
-in the heap means faster major collection times, hence shorter GC
-pauses. Linear types enable *safe* manual memory management for
-long-lived objects.
-
-With linear types, we can write an interface to ``malloc`` and
-``free`` as follows:
-
-::
-
-  malloc :: Storable a => a ->. (Ptr a ->. Unrestricted b) ->. Unrestricted b
-  read :: Storable a => Ptr a ->. (Ptr a, a)
-  free :: Ptr a ->. ()
-
-This interface is safe in the sense that users of this interface get
-two strong static guarantees:
-
-1. that all that they allocate will eventually be freed, and
-2. that after freeing the associated pointer can never be read.
-
-With these two guarantees in hand, users no longer need to rely on the
-GC for managing all resources, hence benefiting from lower tail
-latencies and potentially higher throughput, while still getting
-freedom from segfaults.
-
-Linear types don't just enable using Haskell for more use cases
-(low-latency trading appliances, low-level services in
-high-performance scientific computing clusters, etc). Correctly
-tracking the lifecycle of I/O resources has been a vexing issue for
-many network services. Creating a variant of the BSD socket API that
-statically guarantees ordering constraints between API calls becomes
-possible without the overhead of heavyweight encodings based *e.g.* on
-parameterized monads (see the `paper
-<https://arxiv.org/abs/1710.09756>`_ for more on this example).
-
-::
-
-  -- We need an variant of the IO monad where actions are linear
-  data RIO a
-  returnL :: a ->. RIO a
-  bindL :: RIO a ->. (a ->. RIO b) ->. RIO b
-
-  -- Definition of sockets
-  data State = Unbound | Bound | Listening | Connected
-  data Socket (s :: State)
-  data SocketAddress
-
-  -- When a (TCP) socket is created it is Unbound.
-  socket :: RIO (Socket Unbound)
-  -- To bind a socket to a port we take an Unbound socket, and make it
-  -- Bound. The type of bindL will ensure that the socket is threaded
-  -- through the computation, so that the (Socket Unbound) is not
-  -- accessible: we cannot bind a socket twice.
-  bind :: Socket Unbound ->. SocketAddress -> RIO (Socket Bound)
-  -- A socket must be bound to a port before we start listening
-  listen :: Socket Bound->. RIO (Socket Listening)
-  -- A socket can accept multiple connection, therefore, the socket is
-  -- returned in the same state by accept. A second, bidirectional,
-  -- socket representing the connection is also returned. Both have to
-  -- be used in a single-threaded fashion.
-  accept :: Socket Listening ->. RIO (Socket Listening, Socket Connected)
-  connect :: Socket Unbound ->. SocketAddress -> RIO (Socket Connected)
-  send :: Socket Connected ->. ByteString -> RIO (Socket Connected, Unrestricted Int)
-  receive :: Socket Connected -> RIO (Socket Connected, Unrestricted ByteString)
-  close :: ∀s. Socket s -> RIO ()
+* @gelisam designed `a linear API
+  <https://github.com/gelisam/linear-examples>`_ for `3d-printable
+  models
+  <https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_.
+* @facundominguez `shows how linear types
+  <http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_ make it
+  possible to safely manage two GC heaps managed by two separate GC's,
+  but shared between two language runtimes.
 
 .. _Specification:
 
