@@ -52,7 +52,7 @@ that statically enforce that all I/O happens only on open handles,
 never on closed handles (*no use-after-free*). Moreover, we want such
 API's to enable early closing of handles by the user (*prompt
 deallocation*). Use-after-free and prompt deallocation are hard to
-enforce with current Haskell.
+impossible to enforce with current Haskell.
 
 This proposal hits another goal as a side benefit. In Haskell, impure
 computations are typically structured as a sequence of steps, be it in
@@ -74,19 +74,22 @@ proposal, we have worked out in detail several use cases for linear
 types. We argue that linear types have far ranging consequences for
 the language. Salient use cases from the paper include:
 
-* Safe mutable arrays with a safe *non-copying* `freeze` operation.
-* Off-heap memory that enables allocating, reading, writing and
+- Safe mutable arrays with a safe *non-copying* `freeze` operation.
+- Off-heap memory that enables allocating, reading, writing and
   freeing memory safely, without use-after-free or double-free errors.
   This is an important use case for latency sensitive systems
   programming, where moving objects off-heap, out of the purview of
   the GC, is beneficial for avoiding long GC pauses and achieving
   predictable latencies.
-* Safe zero-copy data (de)serialization, a notoriously difficult
+- Safe zero-copy data (de)serialization, a notoriously difficult
   endeavour that is in fact so error prone without linear types that
   most production systems today typically avoid it.
-* Safe and prompt handling of system resources like files, sockets,
-  database handles etc.
-* Statically enforced communication protocols between distributed
+- Safe and prompt handling of system resources like files, sockets,
+  database handles etc. A `blog post
+  <http://www.tweag.io/posts/2017-08-03-linear-typestates.html>`_
+  demonstrates this use case in more detail, including tracking the
+  state of sockets in types.
+- Statically enforced communication protocols between distributed
   processes communicating via RPC.
 
 The keyword in the above examples is **safety**. This proposal is not
@@ -96,15 +99,19 @@ build safer API's that enforce stronger properties, thereby bringing
 *possible* but otherwise high-risk optimization techniques, like
 managing memory manually, into the realm of the *feasible*.
 
+Resource-safety or any other property are *not* an inherent property
+of linear types. They are properties of API's making careful use of
+linear types.
+
 The use cases put forth above are diverse and pervasive. Yet they are
 but a few examples of the safety properties that can be conveniently
 captured with linear types. Here are a few more:
 
-* @gelisam designed `a linear API
+- @gelisam designed `a linear API
   <https://github.com/gelisam/linear-examples>`_ for `3d-printable
   models
   <https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_.
-* @facundominguez `shows how linear types
+- @facundominguez `shows how linear types
   <http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_ make it
   possible to safely manage two GC heaps managed by two separate GC's,
   but shared between two language runtimes.
@@ -118,10 +125,8 @@ We introduce a new language extension. Types with a linearity
 specification are syntactically legal anywhere in a module if and only
 if ``-XLinearTypes`` is turned on.
 
-This proposal only introduces new type for functions, it does not
-affect the run-time system, and does not enforce resource-safety by
-itself. Linear types are meant to be used in the design of
-abstractions, in particular to enforce resource safety.
+This proposal only introduces a new type for functions. It does not
+affect the runtime system, optimization passes or code generation.
 
 Definition
 ~~~~~~~~~~
@@ -136,17 +141,17 @@ as follows).
 - Consuming a function exactly once means applying it and consuming
   its result exactly once
 
-The type of linear function from type ``A`` to type ``B`` is written
-``A ->. B`` (see Syntax_).
+The type of linear functions from ``A`` to ``B`` is written ``A ->.
+B`` (see Syntax_).
 
 Linearity is a strengthening of the contract of the regular function
 type ``A -> B``, which will be called the type of *unrestricted*
 functions.
 
 Remark: linear function ``f`` can diverge (*i.e.* either not terminate
-or throw an exception) or be called on diverging data. It may feel
-weird because ``f`` will not necessarily consume its argument. But
-it's alright: we can still make safe interface, as explained in the
+or throw an exception) or be called on diverging data. In this case,
+``f`` will not necessarily consume its argument. This is fine: we can
+still build safe programming interfaces, as explained in the
 Exceptions_ section below).
 
 Polymorphism
@@ -165,10 +170,10 @@ polymorphic functions may have variable multiplicity (see also Syntax_), *e.g.*
 
   map :: (a :p-> b) -> [a] :p-> [b]
 
-without polymorphism we would need two implementations of `map`. With
+Without polymorphism, we would need two implementations of `map` with
 the exact same code: one for ``p=1`` and one for ``p=ω``. Function
-composition is even worse: it takes two multiplicity parameters, hence,
-would require four identical implementations:
+composition is even worse: it takes two multiplicity parameters,
+hence, would require four identical implementations:
 
 ::
 
@@ -197,8 +202,8 @@ indexed arrow.
     type family (:+) :: Multiplicity -> Multiplicity -> Multiplicity
     type family (:*) :: Multiplicity -> Multiplicity -> Multiplicity
 
-  In the following, for conciseness ``1`` for ``One`` and ``U``
-  (ASCII) or ``ω`` (Unicode) for ``Omega``. Note: unification of
+  In the following, for conciseness we write ``1`` for ``One`` and
+  ``U`` (ASCII) or ``ω`` (Unicode) for ``Omega``. Note: unification of
   multiplicities will be performed up to the semiring laws for
   ``(:+)`` and ``(:*)`` (see Specification_).
 - The multiplicity annotated arrow, for polymorphism, is written
@@ -233,22 +238,22 @@ turned on. This implies that most types in ``base`` (``Maybe``,
 ``[]``, etc…) have linear constructors. We also make the constructor
 of primitive tuples ``(,)`` linear in their arguments.
 
-With the GADT syntax, multiplicity of the arrows is honored:
+With the GADT syntax, multiplicity of the arrows is honoured:
 
 ::
 
   data Foo2 where
     Bar2 :: A ->. B -> C
 
-then ``Bar2 :: A ->. B -> C``
+means that ``Bar2 :: A ->. B -> C``.
 
 The definition of consuming a value in a data type exactly once must
 be refined to take the multiplicities of fields into account:
 
 - Consuming a value in a datatype exactly once means evaluating it to
-  head normal form and consuming its *linear* fields exactly once
+  head normal form and consuming its *linear* fields exactly once.
 
-When pattern macthing a linear argument, linear fields are introduced
+When pattern matching a linear argument, linear fields are introduced
 as linear variables, and unrestricted fields as unrestricted
 variables:
 
@@ -268,15 +273,20 @@ Base
 
 Because linear functions only strengthen the contract of unrestricted
 functions, a number of functions of ``base`` can get a more precise
-type. However, for pedagogical reason, to prevent linear types from
-interfering with newcomers' understanding the ``Prelude``, this
-proposal does not modify ``base``. Instead we will release a library
-exposing the stronger types for ``base`` functions. This effort has
-been started `here <https://github.com/tweag/linear-base>`_.
+type. However, for pedagogical reasons, to prevent linear types from
+interfering with newcomers' understanding of the ``Prelude``, this
+proposal does not modify ``base``. Instead, we expect that users will
+publish new libraries on Hackage including more precisely typed
+``base`` functions. One such library has already started `here
+<https://github.com/tweag/linear-base>`_.
 
-This library will not redefine any type, and instead takes advantage
-of the fact that data types in ``base`` are linear by default to
-reuse the same types, hence remain compatible with base.
+Any linear variant of ``base`` need not redefine any of the data types
+defined in ``base``. This is because like for all other data types,
+constructors of (non-GADT) data types in ``base`` are linear under
+this proposal. Since we get to reuse data types, libraries
+implementing linear variants of ``base`` functions remain compatible
+with ``base`` (e.g. there need not be two ``Maybe`` types, two list
+types etc).
 
 The only function which will need to change is ``($)`` because its
 typing rule is built in the type checker. Ignoring the details about
@@ -287,31 +297,32 @@ levity and higher-rank polymorphism in the typing rule, the type
 
   ($) :: (a :p-> b) ⊸ a :p-> b
 
-The precise content of the library is out of scope of this proposal:
-future standardisation of library content is the competence of
-the CLC.  However the library will also contain convenient types to
-work with linear types, with the understanding that when the new types
-are standardised in ``base`` the library would re-export them rather
-than define them, such as:
+Defining a linear variant of ``base`` is out of scope of this
+proposal. Possible future standardisation of the library content is
+the competence of the Core Libraries Committee (CLC). For expository
+purposes of the next sections, however, we assume that such a library
+will at least define the following data type:
 
 ::
 
    data Unrestricted a where
      Unrestricted :: a -> Unrestricted a
 
+See the paper for intutions about the ``Unrestricted`` data type.
+
 .. _Multiplicities:
 
 Multiplicities
 ~~~~~~~~~~~~~~
 
-So far, we have considered only two multiplicities ``1`` and
-``ω``. But the metatheory works with any so-called
-sup-semi-lattice-ordered semi-ring (without a 0) of
-multiplicities. That is: there a 1, a sum and a product with the usual
-distributivity laws, a (computable) order compatible with the sum and
-product, such that each pair of multiplicities has a (computable)
-join. Even if there is only two multiplicities in this proposal, the
-proposal is structured to allow future extensions.
+So far, we have considered only two multiplicities: ``1`` and ``ω``.
+But the metatheory works with any so-called sup-semi-lattice-ordered
+semi-ring (without a 0) of multiplicities. That is: there is a 1,
+a sum and a product with the usual distributivity laws, a (computable)
+order compatible with the sum and product, such that each pair of
+multiplicities has a (computable) join. Even if there is only two
+multiplicities in this proposal, the proposal is structured to allow
+future extensions.
 
 Here is the definition of sum, product and order for this proposal's
 multiplicities (in Haskell pseudo-syntax):
@@ -338,10 +349,10 @@ of multiplicity ``p``, or ``0``, in a term ``u`` if:
 - ``u = λy. v`` and the usage of ``x`` in ``v`` is ``p``.
 
 A variable's usage is correct if it is smaller than or equal to the
-multiplicity annotation of the variable. Incorrect usage results in a
-type error. This definition if close to the intended implementation of
-multiplicities, the `paper <https://arxiv.org/abs/1710.09756>`_ has a
-more declarative definition.
+multiplicity annotation of the variable. Incorrect usage results in
+a type error. This definition is close to the intended implementation
+of multiplicities. The `paper <https://arxiv.org/abs/1710.09756>`_ has
+a more declarative definition.
 
 The multiplicity of a variable introduced by a λ-abstraction is taken
 from the surrounding typing information (typically a type annotation
@@ -364,9 +375,9 @@ usage of ``x`` in ``ui`` is ``qi`` and in ``v`` is ``q``.
 
 If a let has recursive binders, then ``p`` must be ``ω``.
 
-A ``case`` expression has an implicity multiplicity annotation, like
+A ``case`` expression has an implicit multiplicity annotation, like
 ``let`` binding. It if often inferred from the type annotation of an
-equation. The usage of ``x`` in ``case_p u of { … }`` where the usage
+equation. The usage of ``x`` in ``case_p u of { … }``, where the usage
 of ``x`` in ``u`` is ``q`` is ``p*q`` plus the *join* of the usage of
 ``x`` in each branch.  Note that, in usages, ``0 ≰ 1`` as arguments
 with multiplicity ``1`` are consumed exactly once, which doesn't
@@ -560,7 +571,7 @@ questions`_ below for a more precise description of this issue).
 Non-termination, exceptions & catch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In presence of non-termination or exceptions, linear functions may
+In the presence of non-termination or exceptions, linear functions may
 fail to fully consume their argument. We can think of it as: the
 consumption of the result of the function was never complete, so the
 consumption of the argument need not be either. However, because
@@ -580,7 +591,7 @@ Where "consuming at most once" is defined by induction, like
 In the paper, we gave a simplified specification of a linear ``IO``
 monad (called ``IOL``) which ignored the issue of exception for the
 sake of simplicity. Can we, still, write a resource-safe ``RIO`` monad
-with linear types despite the added difficulty of exception? Yes, as
+with linear types despite the added difficulty of exceptions? Yes, as
 this section will show.
 
 Concretely, how do we ensure that the sockets from the example API are
@@ -589,7 +600,6 @@ the ``RIO`` monad is implemented. Below is a sketch of one possible
 implementation of ``RIO`` (see `here
 <https://github.com/tweag/linear-base/blob/master/src/System/IO/Resource.hs>`_
 for a detailed implementation).
-
 
 First, note that since Haskell program are of type ``IO ()``, we need a
 way to run ``RIO`` in an ``IO`` computation, this is provided by the
@@ -608,8 +618,8 @@ abstraction registers a release action in the release action table
 when they are acquired.
 
 If no exception occurs, then all resources have been released by the
-program. In case of exception, the program jumps to ``runRIO``, which
-releases the leftover resources.
+program. In case an exception occurs, the program jumps to ``runRIO``,
+which releases the leftover resources.
 
 An alternative strategy would be to add terminators on every resources
 acquired in ``RIO``. Release in the non-exceptional case would still
@@ -620,13 +630,15 @@ exception would be, however, less timely.
 Can ``RIO`` have a ``catch``?
 =============================
 
-It is possible to catch exceptions inside of ``RIO``, but in order to
-ensure resource safety, the type must be restricted:
+It is possible to catch exceptions inside of ``RIO``. But in order to
+ensure resource safety, the type cannot be linear:
 
 ::
 
   catchL :: Exception e
-         => RIO (Unrestricted a) -> (e -> RIO (Unrestricted a)) -> RIO (Unrestricted a)
+         => RIO (Unrestricted a)
+	 -> (e -> RIO (Unrestricted a))
+	 -> RIO (Unrestricted a)
 
 That is: no linear resource previously allocated can be referenced in
 the body or the handler, and no resource allocated in the body or
@@ -637,9 +649,10 @@ exceptions all the local resources are released by ``catchL``, as
 ``runRIO`` does, before the handler is called. The original release
 action table is then reinstated.
 
-With this implementation it is clear that capturing linear resources
+With this implementation, it is clear that capturing linear resources
 from the outside scope would compromise timely release, and returning
-locally acquired resources would leak resources in case of exception.
+locally acquired resources would leak resources if an exception
+occurs.
 
 The latter restriction can be lifted as follows: instead of
 reinstating the original release action table in the non-exceptional
@@ -670,7 +683,7 @@ a``. Correspondingly, the type of the exception-throwing primitives are:
   throwRIO :: Exception e => e -> RIO a
   trow :: Exception e => e -> a
 
-That is exceptions don't have linear payload.
+That is, exceptions don't have a linear payload.
 
 While there does not seem to be any conceptual difficulty in throwing
 exception with linear payload, we have noticed that, in practice, many
@@ -688,23 +701,25 @@ library.
 Effect and Interactions
 -----------------------
 
-A staple of this proposal is that it does not modify Haskell for those
-who don't want to use it, or don't know of linear types. Even if an
-API exports linear types, they are easy to ignore: just imagine that
-the arrows are regular arrows, it will work as expected.
+A staple of this proposal is:
 
-Linear data types are just regular Haskell types, which means it is cheap
-to interact with existing libraries. That is, unless there are linear
-arrows in argument position. In which case, attempt to use a
-non-linear function will raise a linear-type error. The motivating
-examples are all like this: they are libraries which require linear
-types to work.
+*it does not modify Haskell for those who don't want to use it, or
+don't know about linear types.*
 
-There is an unpleasant interaction with ``-XRebindableSyntax``: ``if u
-then t else e`` is interpreted as ``ifThenElse u t e``. Unfortunately,
-these two constructs have different typing rules when ``t`` and ``e``
-have free linear variables. Therefore well-typed linearly typed
-programs can stop typing when ``-XRebindableSyntax`` is added.
+Even if an API exports linear types, they are easy to ignore: just
+pretend that the dotted arrows are regular arrows. It is always safe
+in all contexts to substitute something with a linear arrow where
+a regular arrow was expected.
+
+Linear data types are just regular Haskell types, which means it is
+cheap to interact with existing libraries.
+
+There is an unpleasant interaction with ``-XRebindableSyntax``: ``if
+u then t else e`` is interpreted as ``ifThenElse u t e``.
+Unfortunately, these two constructs have different typing rules when
+``t`` and ``e`` have free linear variables. Therefore well-typed
+linearly typed programs might not type check with
+``-XRebindableSyntax`` enabled.
 
 The meta-theory of linear types in a lazy language fails if we allow
 unrestricted ``newtype``-s:
@@ -751,7 +766,7 @@ Unresolved questions:
 - It is unknown at this point whether view patterns can be linear
 - It is unknown at this point whether ``@`` pattern of the form
   ``x@C _ _`` can be considered linear (it is as much a practical
-  question of whether there is a reasonable way to implemet such a
+  question of whether there is a reasonable way to implement such a
   check as a theoretical question of whether we can justify it).
 - There is no account yet of linear pattern synonyms.
 
@@ -762,35 +777,37 @@ Costs and Drawbacks
 Learnability
 ~~~~~~~~~~~~
 
-This proposal tries hard to make the changes invisible to newcomers,
-however, if many libraries start adopting it, the new function types
-will appear in APIs. They can often be safely ignored, but they can
-still be considered distracting.
+This proposal tries hard to make the changes unintrusive to newcomers,
+or indeed to the existing language ecosystem as a whole. However, if
+many users start adopting it, inevitably, linear arrows may start
+appearing in so many libraries that it becomes hard to be oblivious to
+their existence. They can be safely ignored, but teachers of Haskell
+might still consider them distracting for their students.
 
 Development and maintenance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The arrow type constructor is constructed and destructed a lot in
-GHC's internals. So there are many places where we have to handle
-multiplicities. It is most often straightforward as it consists in
-getting a multiplicity variable and pass it to a
-function. Nevertheless, it is possible to get it wrong. And type
-checker developers will have to be aware of multiplicities to modify
-most aspects of type checking.
+GHC's internals. So there are many places in the type checker where
+the GHC implementation will have to handle multiplicities. It is most
+often straightforward as it consists in getting a multiplicity
+variable and pass it to a function. Nevertheless, it is possible to
+get it wrong. And type checker developers will have to be aware of
+multiplicities to modify most aspects of type checking.
 
 Linear types also affect Core: Core must handle linear types in order
 to ensure that core-to-core passes do not break the linearity
 guarantees. The flip side is that all core-to-core passes must make
 sure that they do not break linearity. It is possible that some of the
-pre-linear-type passes actually do break linearity in some cases (this
-has not been acertained, yet).
+pre-linear-type passes actually do break linearity in some cases
+(note: there has been no evidence of this so far).
 
-Unification of multiplicity expressions (as for for instance in the
-type of ``(.)`` above) requires some flavour of unification module
+Unification of multiplicity expressions (as for instance in the type
+of ``(.)`` above) requires some flavour of unification module
 associativity and commutativity (AC). Unification modulo AC is
-well-understood an relatively easy to implement. But would still be a
-non-trivial addition to the type-checker. We may decide that a
-simplified fragment is better suited for our use-case that the full
+well-understood an relatively easy to implement. But would still be
+a non-trivial addition to the type-checker. We may decide that
+a simplified fragment is better suited for our use-case that the full
 generality of AC.
 
 
@@ -838,8 +855,9 @@ alternative, based on the resemblance with the Unicode notation
 
 We chose ``(->.)`` because it does not change the lexer (``-o`` is not
 a token in current GHC, and ``a-o`` is currently interpreted as ``(-)
-a o``), and because it is less intrusive, and more easily ignored by
-newcomers who don't want to think about linear types.
+a o``). ``-o`` does not convey the intuition that ``->.`` is just
+``->`` for most intents and purposes (except for those advanced users
+who do care about the distinction).
 
 .. _`Binders with multiplicity`
 
@@ -847,7 +865,7 @@ Binders with multiplicity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the paper, we wrote ``λ x :₁ A, u`` for (unannotated) linear
-functions. We don't currently provide a corresponding syntax, by lack
+functions. We don't currently provide a corresponding syntax, for lack
 of good syntax.
 
 If a syntax is provided, we could also use this syntax to have records
@@ -859,24 +877,20 @@ with different multiplicities.
 
 .. _`Affine types`
 
-Affine types rather than linear types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Affine types instead of linear types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In presence of exceptions it may seem that linear functions do not
-necessarily consume their arguments. For instance, an ``RIO a`` may
-abort before closing its file handles. And because of ``catch`` we are
-able to be observe this effect.
-
-Since exceptions are an integral part of Haskell, and since guarantees
-of linear functions are different in case of normal return or
-exceptional return, it is appealing to call for less guarantees in all
-cases.
+In the presence of exceptions, it may seem that linear functions do
+not necessarily consume their arguments. For instance, an ``RIO a``
+may abort before closing its file handles. And because of ``catch`` we
+are able to be observe this effect. Could affine types jibe better
+with this reality?
 
 A function is called *affine* if it guarantees that if its returned
 value is consumed at most once, then its argument is consumed at most
 once.
 
-There are three possible system which we can consider:
+There are three possible systems we can consider:
 
 1. A system with linear functions (as we are proposing)
 2. A system with affine functions
@@ -889,16 +903,18 @@ cope with affine functions. Therefore the choice between these three
 systems is not a fundamental issue of this proposal. We are arguing
 for system (1), but it can easily be changed.
 
-We argue against system (2) because linearity guarantees still matter,
-even if they are made more complex by exceptions. There are use-cases
-where exceptions don't matter (such as @gelisam's `3D-printable models
-<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_),
-it would arbitrary to prevent them from using the linear types that
-they need. Plus even in ``RIO`` code, where exceptions do matter,
-linear types are useful: they allow prompt deallocation as argued in
-the section on Exceptions_, it can be much harder to reason on the
-lifetime of resources with explicit scopes like with ``bracket`` (see
-the `inline-java use-case
+We argue against system (2) because many API properties crucially rely
+on linearity. These properties are common enough that a direct-style
+is preferable to simulating linear types using affine types and
+continuation passing style (CPS). There are use-cases where exceptions
+don't matter (such as @gelisam's `3D-printable models
+<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_).
+It would seem an arbitrary limitation for little gain to prevent them
+from using the linear types that they need. Plus even in ``RIO`` code,
+where exceptions do matter, linear types are useful: they allow prompt
+deallocation as argued in the section on Exceptions_, it can be much
+harder to reason on the lifetime of resources with explicit scopes
+like with ``bracket`` (see the `inline-java use-case
 <http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_ for an
 example where scopes have proved to be unsatisfactory).
 
@@ -1140,8 +1156,8 @@ On the other hand, doing this loses the principle that linear data
 types and unrestricted data types are one and the same. And sacrifices
 much code reuse.
 
-Unicity instead of linearity
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Uniqueness instead of linearity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Languages like Clean and Rust have a variant of linear types called
 uniqueness, or ownership, typing. This is a dual notion: instead of
@@ -1150,7 +1166,7 @@ no restriction being imposed on the caller, with uniqueness type, the
 caller must guarantee that it has a non-aliased reference to a value,
 and the function has no restriction.
 
-Where unicity really shines, is for in-place mutation: the ``write``
+Where uniqueness really shines, is for in-place mutation: the ``write``
 function can take a regular ``Array`` as an argument, it just needs to
 require that it is unique. Freezing is really easy: just drop the
 constraint that the ``Array`` is unique, it will never be writable
