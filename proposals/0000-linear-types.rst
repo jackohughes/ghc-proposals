@@ -949,8 +949,11 @@ implementation cost and a design cost. The implementation cost arises
 because we want a stronger guarantee: we want to know that all GC
 roots are always freed exactly once, so we must register each GC root
 to free them if an exception is thrown. A free-at-most-once guarantee
-wouldn't require this. The design cost is that ``catch`` requires
-a weaker type than desirable, as discussed above, limiting its power.
+wouldn't require this, but is also not realistic. In the above use
+case, we *do* want references to be freed eventually, so we have to
+bother with registration either way, whether with affine or linear
+types. The design cost is that ``catch`` requires a weaker type than
+desirable, as discussed above, limiting its power.
 
 It should be noted that affine types are *sufficient* for many use
 cases. Examples: in-place mutation of garbage-collected structures
