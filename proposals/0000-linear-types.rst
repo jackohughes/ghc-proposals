@@ -892,9 +892,9 @@ once.
 
 There are three possible systems we can consider:
 
-1. A system with linear functions (as we are proposing)
-2. A system with affine functions
-3. A system with both linear and affine functions
+1. a system with linear functions (as we are proposing),
+2. a system with affine functions,
+3. a system with both linear and affine functions.
 
 All three system are consistent and can be easily accommodated in our
 formalism. In fact the formalism has been designed with extensibility
@@ -903,49 +903,86 @@ cope with affine functions. Therefore the choice between these three
 systems is not a fundamental issue of this proposal. We are arguing
 for system (1), but it can easily be changed.
 
-We argue against system (2) because many API properties crucially rely
-on linearity. These properties are common enough that a direct-style
-is preferable to simulating linear types using affine types and
-continuation passing style (CPS). There are use-cases where exceptions
-don't matter (such as @gelisam's `3D-printable models
-<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_).
-It would seem an arbitrary limitation for little gain to prevent them
-from using the linear types that they need. Plus even in ``RIO`` code,
-where exceptions do matter, linear types are useful: they allow prompt
-deallocation as argued in the section on Exceptions_, it can be much
-harder to reason on the lifetime of resources with explicit scopes
-like with ``bracket`` (see the `inline-java use-case
-<http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_ for an
-example where scopes have proved to be unsatisfactory).
+We argue against system (2) for the following reasons, expanded upon
+below:
 
-There is, nonetheless, value to affine types. There are some
-applications where affine types are enough to enforce invariants (such
-as in-place mutation of garbage-collected structure, like mutable
-arrays). And they can presumably benefit from the additional
-flexibility. For instance, ``catch`` can get a more fine-grained type
-(writing ``'A`` for the affine multiplicity):
+* Many API properties crucially rely on linearity.
+* Affine types and linear types are *not* equi-expressive (see next
+  section).
+* Some API properties (not all) can be achieved using linear types in
+  direct style, or with affine types in continuation passing style
+  (CPS). As is well-established in the literature, programming in
+  direct style is easier, less verbose and less error prone than CPS.
+  So abandoning the stronger guarantee of linear types would come at
+  a cost for API designers.
+* While affine types are sufficiently strong to achieve many desirable
+  properties, linear types can express them just as well at minimal
+  implementation and API design cost.
+
+An example of a direct style API that crucially relies on linearity is
+@gelisam's `3D-printable models
+<https://www.spiria.com/en/blog/desktop-software/making-non-manifold-models-unrepresentable>`_).
+Exceptions can only be caught in the ``IO`` monad, yet this API is
+pure. So exceptions are not a concern in the design of this API. The
+properties this API wants to enforce hold even with linear types and
+even in the face of exceptions being thrown (in a pure or impure
+context) and caught (in an impure context). No linear types means this
+API would need to use CPS, if that works at all to enforce the same
+properties.
+
+Another example is `language interop
+<http://www.tweag.io/posts/2017-11-29-linear-jvm.html>`_ by
+@facundominguez and @mboes. In this example, Haskell users create GC
+roots for every object in the JVM's heap that they want to reference
+directly. These GC roots must be released as soon as the reference is
+no longer useful, otherwise memory pressure on the JVM will increase
+and throughput will suffer because of more frequent GC passes. Worse,
+deleting roots too late can sometimes prevent any memory from being
+reclaimed at all, leading to out-of-memory conditions. Introducing
+a ``bracket``-like ``withJvmScope`` action is one way to ensure all
+roots do get deleted eventually (at scope exit), but in practice, in
+complex dual-language projects, introducing neither too fine-grained
+or too coarse-grained scopes has proven very difficult. Furthermore,
+``bracket``-like constructs break tail-recursion. Linear types enable
+working with a single global resource scope, while still guaranteeing
+eventual deletion of roots, in any order. Affine types do not. At any
+rate, not in direct-style.
+
+Now, in this latter example, exceptions do impose both an
+implementation cost and a design cost. The implementation cost arises
+because we want a stronger guarantee: we want to know that all GC
+roots are always freed exactly once, so we must register each GC root
+to free them if an exception is thrown. A free-at-most-once guarantee
+wouldn't require this. The design cost is that ``catch`` requires
+a weaker type than desirable, as discussed above, limiting its power.
+
+It should be noted that affine types are *sufficient* for many use
+cases. Examples: in-place mutation of garbage-collected structures
+like mutable arrays. Affine types also make it possible to ascribe
+a more precise type to ``catch`` (writing ``'A`` for the affine
+multiplicity):
 
 ::
 
   catch :: Exception e => RIO a :'A-> (e -> RIO a) :'A-> RIO a
 
-So affine mutable arrays could be free variables in the body of a
-``catch``. It's not clear yet that this finer type for ``catch`` would
-actually be useful: the same affine free variable could not appear
-both in the body and the handler. The only instance of such a pattern
-which we've found documented so far, is in the Alms programming
-language, where the ``catch`` is used to perform clean-up, *i.e.*
-close a resource, (see `Jesse Tov's thesis p67
-<http://users.eecs.northwestern.edu/~jesse/pubs/dissertation/tov-dissertation-screen.pdf#figure.4.7>`_),
-we have abstracted this pattern away in the purely linear case. We
-invite the community to come up with good examples of such use of
-affine types.
+So affine mutable arrays could be free variables in the body of
+a ``catch``. It's not clear yet that this finer type for ``catch``
+would actually be useful: the same affine free variable could not
+appear both in the body and the handler. The only instance of such
+a pattern which we've found documented so far, is in the Alms
+programming language, where the ``catch`` is used to perform clean-up,
+*i.e.* close a resource, (see `Jesse Tov's thesis p67
+<http://users.eecs.northwestern.edu/~jesse/pubs/dissertation/tov-dissertation-screen.pdf#figure.4.7>`_).
+We invite the community to come up with more use cases for affine
+types and where linear types would impose a high implementation and/or
+API design cost.
 
-While it is easy to make system (3), and we believe it would have
-benefits, we haven't included it in the proposal, and rather propose
-to stage it for a later proposal (see also `More multiplicities`_
-below), and keep, in this proposal, the minimal system which addresses
-the motivations.
+Finally, while it is easy to implement system (3), we have not
+included it in the proposal. We propose to shelve it for a later
+proposal (see also `More multiplicities`_ below), while thriving in
+this proposal to focus first on the minimal system that adequately
+addresses the motivations.
 
 Remarks on the relation between affine and linear types
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -962,7 +999,7 @@ example:
   data Socket (n :: *) (s :: State)
   data Closed (n :: *)
 
-  socket :: RIO (forall n. Socket n 'Unbound :'A-> RIO (Unrestricted a, Closed s)) :'A -> RIO (Unrestricted a)
+  newSocket :: RIO (forall n. Socket n 'Unbound :'A-> RIO (Unrestricted a, Closed s)) :'A -> RIO (Unrestricted a)
   […]
   close :: Socket n s -> RIO (Closed s)
 
@@ -992,7 +1029,6 @@ type to ``catch``:
 
 Therefore, despite the tantalising proximity, system (1) and (2) are
 different in practice.
-
 
 Subtyping instead of polymorphism
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
