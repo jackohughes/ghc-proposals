@@ -935,18 +935,14 @@ Another example is `language interop
 @facundominguez and @mboes. In this example, Haskell users create GC
 roots for every object in the JVM's heap that they want to reference
 directly. These GC roots must be released as soon as the reference is
-no longer useful, otherwise memory pressure on the JVM will increase
-and throughput will suffer because of more frequent GC passes. Worse,
-deleting roots too late can sometimes prevent any memory from being
-reclaimed at all, leading to out-of-memory conditions. Introducing
-a ``bracket``-like ``withJvmScope`` action is one way to ensure all
-roots do get deleted eventually (at scope exit), but in practice, in
-complex dual-language projects, introducing neither too fine-grained
-or too coarse-grained scopes has proven very difficult. Furthermore,
-``bracket``-like constructs break tail-recursion. Linear types enable
-working with a single global resource scope, while still guaranteeing
-eventual deletion of roots, in any order. Affine types do not. At any
-rate, not in direct-style.
+no longer useful. Introducing a ``bracket``-like ``withJvmScope``
+action is one way to ensure all roots do get deleted eventually (at
+scope exit), but in practice, in complex dual-language projects,
+introducing neither too fine-grained or too coarse-grained scopes has
+proven very difficult. Furthermore, ``bracket``-like constructs break
+tail-recursion. Linear types enable working with a single global
+resource scope, while still guaranteeing eventual deletion of roots,
+in any order. Affine types do not. At any rate, not in direct-style.
 
 Now, in this latter example, exceptions do impose both an
 implementation cost and a design cost. The implementation cost arises
