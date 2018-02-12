@@ -717,12 +717,18 @@ a regular arrow was expected.
 Linear data types are just regular Haskell types, which means it is
 cheap to interact with existing libraries.
 
+Rebindable Syntax
+~~~~~~~~~~~~~~~~~
+
 There is an unpleasant interaction with ``-XRebindableSyntax``: ``if
 u then t else e`` is interpreted as ``ifThenElse u t e``.
 Unfortunately, these two constructs have different typing rules when
 ``t`` and ``e`` have free linear variables. Therefore well-typed
 linearly typed programs might not type check with
 ``-XRebindableSyntax`` enabled.
+
+Unrestricted newtypes
+~~~~~~~~~~~~~~~~~~~~~
 
 The meta-theory of linear types in a lazy language fails if we allow
 unrestricted ``newtype``-s:
@@ -739,6 +745,9 @@ newtypes convert ``case`` into a cast, hence the closure is never
 consumed. So ``newtype`` must not accept non-linear arrow with
 ``-XLinearTypes``. These are interpreted as linear ``newtype``-s and a
 warning is emitted (see Specification_ above).
+
+Pattern-matching
+~~~~~~~~~~~~~~~~
 
 Lazy pattern-matching is only allowed for unrestricted (multiplicity
 ``ω``) patterns: lazy patterns are defined in terms of projections
