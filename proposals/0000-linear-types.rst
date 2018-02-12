@@ -531,10 +531,10 @@ A``. Our practice of linear Haskell code indicates that this feature,
 while a mere convenience, is desirable (see *e.g.* `here
 <https://github.com/tweag/linear-base/blob/e72d996b5d0600b2d5f2483b95b064d524c83e46/src/System/IO/Resource.hs#L59-L61>`_).
 
-.. _Inference
-
 Inference
 ~~~~~~~~~
+
+.. _Inference:
 
 Because of backwards compatibility, we initially chose the following
 strategy: when the type of a function is not constrained by given
@@ -1441,10 +1441,10 @@ are affected.
 Note: the constraint arrow ``=>`` is interpreted as an unrestricted
 arrow (*i.e.* of multiplicity ω).
 
-.. _`Core transformations`
-
 Effect on transformations and passes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _`Core transformations`:
 
 An indication that the effects of linear types on Core transformations
 should be small is that GHC must already preserve linearity: in the
