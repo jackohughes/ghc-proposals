@@ -188,6 +188,9 @@ Syntax
 
 .. _Syntax:
 
+This section is only a proposal for a syntax for linear types. For
+other possibilities to consider, see the `Alternatives`_ section.
+
 The new primary constructs are: multiplicities and the multiplicity
 indexed arrow.
 
@@ -248,7 +251,9 @@ With the GADT syntax, multiplicity of the arrows is honoured:
   data Foo2 where
     Bar2 :: A ->. B -> C
 
-means that ``Bar2 :: A ->. B -> C``.
+means that ``Bar2 :: A ->. B -> C``. This means that *data types
+written in GADT syntax with the ``(->)`` arrow are not the same as if
+they were defined with Haskell'98 syntax*.
 
 The definition of consuming a value in a data type exactly once must
 be refined to take the multiplicities of fields into account:
