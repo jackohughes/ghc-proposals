@@ -283,9 +283,7 @@ variables:
 
 An exception to this rule is ``newtype`` declarations in GADT syntax:
 ``newtype``-s' argument must be linear (see Interactions_
-below). For backward compatibility, we propose to make unrestricted arrows
-``(->)`` in ``newtype``-s be interpreted as linear arrows, and create
-a new warning ``unrestricted-newtype`` triggered when this happens.
+below).
 
 Base
 ~~~~
@@ -759,7 +757,10 @@ has the consequence of consuming all the resources in the closure of
 ``v`` making it safe to use the value many times or not at all. But
 newtypes convert ``case`` into a cast, hence the closure is never
 consumed. So ``newtype`` must not accept non-linear arrow with
-``-XLinearTypes``. These are interpreted as linear ``newtype``-s and a
+``-XLinearTypes``: the above produces an error (see also `Without
+-XLinearTypes`_ below).
+
+These are interpreted as linear ``newtype``-s and a
 warning is emitted (see Specification_ above).
 
 Pattern-matching
@@ -799,6 +800,37 @@ Unresolved questions:
   check as a theoretical question of whether we can justify it).
 - There is no account yet of linear pattern synonyms.
 
+Without -XLinearTypes
+~~~~~~~~~~~~~~~~~~~~~
+
+.. _`Without -XLinearTypes`:
+
+When using ``-XLinearTypes``, the GADT-syntax equivalent of a
+Haskell'98 type declaration uses the linear arrow rather than the
+unrestricted arrows, as is customary in Haskell. Worse: GADT-syntax
+``newtypes``-s are *rejected* if they use unrestricted arrows.
+
+Since this proposal is completely backwards compatible, GADT-syntax
+``newtype``-s must behave differently without
+``-XLinearTypes``. GADT-syntax ``data`` definitions need not, but it
+is the expectation of the programmer that the following two are
+equivalent definitions (which they are not with ``-XLinearTypes``):
+
+::
+
+  data Maybe a
+    = Just a
+    | Nothing
+
+  data Maybe a where
+    Just :: a -> Maybe a
+    Nothing :: Maybe a
+
+To follow the principle of least surprise (which we take to mean that
+only programmers aware of ``-XLinearTypes`` would be surprised), we
+interpret GADT-syntax type declaration (both ``data`` and ``newtype``)
+in code without ``-XLinearTypes`` to be *linear*, despite the
+ostensible use of an unrestricted arrow.
 
 Costs and Drawbacks
 -------------------
