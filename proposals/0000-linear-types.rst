@@ -442,7 +442,7 @@ linear patterns.
 
 It would be convenient for the programmer, but with the current typing
 rules for Core, the generated Core would not be well-typed as the
-second argument would be seen as non-linear (see the Core_ and
+second argument would be seen as non-linear (see the `The Core Corner`_ and
 `Unresolved questions`_ section below for more details).
 
 Wildcard patterns are especially useful in multiple-equations
@@ -1385,10 +1385,11 @@ Instead of trying to come up with a definite list of multiplicities
 which ought to be built in, we hope to be able to propose a solution
 to make it possible for libraries to define new multiplicities.
 
-.. _Core
 
 The Core corner
 ---------------
+
+.. _`The Core corner`:
 
 *This section is an appendix to the proposal describing the changes
 to GHC's Core intermediate language in order to accommodate the new
@@ -1576,10 +1577,12 @@ avoid saving its thunk upon evaluation as we are not going to force it
 again. But the case-binder does not have this property:
 computationally does not quite behave like a linear ``let``.
 
-.. _`Unresolved questions`
-
 Unresolved questions
 --------------------
+
+.. _`Unresolved questions`:
+
+This section summarises the questions that have yet to be resolved.
 
 Inference
 ~~~~~~~~~
@@ -1629,7 +1632,7 @@ It is not clear yet how the following should be handled:
 - ``@``-patterns: The pattern ``x@(Just _) -> …`` could be seen as
   linear. After all, it is equivalent to ``Just y -> let x = Just y in
   …``. It is not clear that we can make the linearity checking in Core
-  accept this sort of patterns (see also the Core_ section above).
+  accept this sort of patterns (see also the `The Core corner`_ section above).
 - Pattern synonym: linear pattern synonyms have not been studied
   yet. In particular, how they ought to be type checked, when they are
   defined. It is still unknown whether this problem is hard or easy.
@@ -1698,7 +1701,7 @@ Solving this will have user-facing implications, in particular regarding
 which view patterns and ``@``-patterns are available in linear
 functions.
 
-See also the sections Patterns_ and Core_.
+See also the sections Patterns_ and `The Core corner`_.
 
 Implementation Plan
 -------------------
