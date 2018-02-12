@@ -836,8 +836,8 @@ Alternatives
 This section describes variants that could be considered for inclusion
 in the proposal.
 
-Syntax of multiplicity-parametric arrow
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Syntax of the multiplicity-parametric arrow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The proposed mixfix ``a :p-> b`` syntax for the
 multiplicity-parametric arrow makes a potentially non-trivial addition
@@ -867,6 +867,20 @@ except to the left of an arrow. And ``WithMult a p -> b`` means
 ::
 
   map :: (a `WithMult` p -> b) -> [a] `WithMult` p -> [b]
+
+Lexical tokens of the multiplicity-parametric arrow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Assuming that the multiplicity polymorphic arrow deserves a full-blown
+mixfix syntax, here are other notations which have been floated:
+
+- ``(-p->)``
+- ``(->_p)`` (using the ``_`` to represent the subscript from the
+  paper as in Latex)
+- ``(->:p)``. We've used this one a little, and found that it was
+  confusing, seeming to attach the multiplicity to the result, where
+  it ought to be thought as affecting the argument. The same probably
+  apply to ``(->_p)``.
 
 Lexical token of the linear arrow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
