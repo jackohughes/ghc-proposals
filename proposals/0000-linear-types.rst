@@ -82,7 +82,9 @@ the language. Salient use cases from the paper include:
   This is an important use case for latency sensitive systems
   programming, where moving objects off-heap, out of the purview of
   the GC, is beneficial for avoiding long GC pauses and achieving
-  predictable latencies.
+  predictable latencies. A prototype is implemented in the
+  `linear-base library
+  <https://github.com/tweag/linear-base/blob/master/src/Foreign/Marshal/Pure.hs>`_.
 - Safe zero-copy data (de)serialization, a notoriously difficult
   endeavour that is in fact so error prone without linear types that
   most production systems today typically avoid it.
