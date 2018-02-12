@@ -206,8 +206,7 @@ indexed arrow.
     type family (:+) :: Multiplicity -> Multiplicity -> Multiplicity
     type family (:*) :: Multiplicity -> Multiplicity -> Multiplicity
 
-  In the following, for conciseness we write ``1`` for ``One`` and
-  ``U`` (ASCII) or ``ω`` (Unicode) for ``Omega``. Note: unification of
+  Note: unification of
   multiplicities will be performed up to the semiring laws for
   ``(:+)`` and ``(:*)`` (see Specification_).
 - The multiplicity annotated arrow, for polymorphism, is written
@@ -221,9 +220,9 @@ indexed arrow.
 
 The linear and unrestricted arrows are aliases:
 
-- ``(->)`` is an alias for ``(:'U ->)``
+- ``(->)`` is an alias for ``(:'Omega ->)``
 - ``(->.)`` (ASCII syntax) and ``(⊸)`` (Unicode syntax) are aliases
-  for ``(:'1 ->)``
+  for ``(:'One ->)``
 
 Constructors & pattern-matching
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -840,7 +839,7 @@ to read
 
 ::
 
-  map :: ARROW 'U (ARROW p a b) (ARROW p [a] [b])
+  map :: ARROW 'Omega (ARROW p a b) (ARROW p [a] [b])
 
 So we introduce a binary type construction ``WithMult`` (or some
 operator syntax). It is a syntax error to use ``WithMult`` anywhere
@@ -878,7 +877,7 @@ with different multiplicities.
 
 ::
 
-  data R = R { unrestrictedField ::(ω) A, linearField ::(1) B }
+  data R = R { unrestrictedField ::(Omega) A, linearField ::(One) B }
 
 .. _`Affine types`
 
@@ -1144,7 +1143,7 @@ creates a small complication. Which can be solved in a number of way:
 
   ::
 
-     map :: (a :(p+1)-> b) -> [a] :(p+1)-> [b]
+     map :: (a :(p:+'One)-> b) -> [a] :(p:+'One)-> [b]
      map f [] = []
      map f (a:l) = f a : (map f l)
 
@@ -1153,7 +1152,7 @@ creates a small complication. Which can be solved in a number of way:
 
   ::
 
-     map :: forall p a b q. (p ~ q + 1) => (a :p-> b) -> [a] :p-> [b]
+     map :: forall p a b q. (p ~ q :+ 'One) => (a :'One-> b) -> [a] :p-> [b]
 
   In order to play more nicely, for instance, with explicit type
   applications.
@@ -1175,12 +1174,12 @@ creates a small complication. Which can be solved in a number of way:
 
     map :: (CaseCompatible p) => (a :p-> b) -> [a] :p-> [b]
 
-  This is harder to implement than just reusing ``p~q+1`` as a
+  This is harder to implement than just reusing ``p~q:+'One`` as a
   constraint, but is more resistant to having more multiplicities than
   just 0, 1, and ω, as is currently proposed.
 - Another option is to have a type of multiplicities *excluding* ``0``
   and have another type of extended mulitplicities for multiplicities
-  with ``0``. Note that a different ``(+)`` and ``(*)`` would have to
+  with ``0``. Note that a different ``(:+)`` and ``(:*)`` would have to
   act on extended multiplicities.
 
 .. _`No annotation on case`
@@ -1241,13 +1240,13 @@ motivating ``MArray`` interface.
 
 The most natural way to do this, in Haskell, is to add a second
 parameter to ``TYPE`` (the first one is for levity polymorphism). So,
-ignoring the levity polymorphism, we would have ``TYPE '1`` for linear
-types and ``TYPE 'U`` for unrestricted type. We get polymorphism by
+ignoring the levity polymorphism, we would have ``TYPE 'One`` for linear
+types and ``TYPE 'Omega`` for unrestricted type. We get polymorphism by
 abstracting over the multiplicity.
 
 As interesting as it is, there is quite some complication associated
 to it. First, because of laziness, you can't have a function of type
-``(A :: TYPE '1) -> (B :: TYPE 'U)`` (because you don't need to
+``(A :: TYPE 'One) -> (B :: TYPE 'Omega)`` (because you don't need to
 consume the result, hence you may not consume an argument that you
 have to consume). So what would be the type of the arrow? Something
 like ``forall (p :: Multiplicity) (q ⩽ p). p -> q -> q``. So we're
@@ -1264,14 +1263,14 @@ explicit:
     (:) :: a -> List p a -> List p a
 
 Mixing non-linear and linear lists (*e.g.* with ``(++)``) would
-require either some subtyping from ``List 'U a`` to ``List '1 a`` (but
+require either some subtyping from ``List 'Omega a`` to ``List 'One a`` (but
 as discussed above, subptyping in presence of polymorphism quickly
 becomes hairy) or some conversion function.
 
 It it worth taking into account that the issues with ``MArray`` and
-``Array`` (which may be ``Array '1`` and ``Array 'U`` in this case)
+``Array`` (which may be ``Array 'One`` and ``Array 'Omega`` in this case)
 above are not solved by such a situation. Unless there is a subptyping
-relation from ``Array 'U`` from ``Array '1``, which cannot be performed
+relation from ``Array 'Omega`` from ``Array 'One``, which cannot be performed
 by an explicit function since this would be equivalent to the
 proposal's situation.
 
@@ -1338,7 +1337,7 @@ declaring toplevel linear binders
 ::
 
   module Foo where
-  token ::('1) A  -- made up syntax
+  token ::('One) A  -- made up syntax
 
 Here ``token`` would have be consumed exactly once by the program,
 this property is a link-time property. This generalised the
@@ -1359,7 +1358,7 @@ extend with new multiplicities: add a multiplicity to the
 join functions.
 
 As discussed in the `Affine types`_ section, one such extra
-multiplicity is the multiplicity of affine functions (which is both
+multiplicity is the multiplicity of affine functions (which is
 the join of ``0`` and ``1``). The `paper
 <https://arxiv.org/abs/1710.09756>`_ also suggests a "borrowing"
 multiplicity which would allow for arbitrary usage, but be strictly
