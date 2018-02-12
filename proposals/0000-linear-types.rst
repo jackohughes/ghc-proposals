@@ -959,6 +959,39 @@ a o``). ``-o`` does not convey the intuition that ``->.`` is just
 ``->`` for most intents and purposes (except for those advanced users
 who do care about the distinction).
 
+Other strategies when -XLinearTypes is turned off
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The proposal holds that in absence of ``-XLinearTypes``, GADT-syntax
+type declarations are interpreted as linear declarations. This
+achieves two purposes:
+
+- For ``data`` declarations: it honours the expectation of the
+  programmer unaware of or unfamiliar with ``-XLinearTypes`` that
+  Haskell'98 syntax can always be replaced by the appropriate GADT
+  syntax without affecting the semantics.
+- For ``newtype`` declarations: it makes sure that the existing
+  GADT-syntax ``newtype``-s are valid, while must be rejected when
+  ``-XLinearTypes`` is turned on.
+
+This choice is aimed at making the life of programmers which don't use
+``-XLinearTypes`` as unaffected by the existence of linear types as
+possible. On the other hand, one may point out that it will make it so
+that turning ``-XLinearTypes`` will change the semantics of
+GADT-syntax type declarations. While we believe it to be a lesser
+problem, let us outline an alternative plan.
+
+- ``data`` declaration honour the unrestricted arrow annotation even
+  with ``-XLinearTypes`` turned off. This means that they are *not*
+  equivalent to the corresponding Haskell'98 declaration anymore. This
+  would likely mean that users of ``-XLinearTypes`` will want to
+  discourage the use of GADT syntax where Haskell'98 syntax even in
+  codebases which don't use ``-XLinearTypes``.
+- ``newtype`` declarations are always linear. Even if we use
+  unrestricted arrows in their definitions. Even with
+  ``-XLinearTypes`` turned on. When ``-XLinearTypes`` is on, a warning
+  is emitted.
+
 Binders with multiplicity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
