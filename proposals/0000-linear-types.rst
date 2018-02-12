@@ -120,10 +120,10 @@ captured with linear types. Here are a few more:
   possible to safely manage two GC heaps managed by two separate GC's,
   but shared between two language runtimes.
 
-.. _Specification:
-
 Proposed Change Specification
 -----------------------------
+
+.. _Specification:
 
 We introduce a new language extension. Types with a linearity
 specification are syntactically legal anywhere in a module if and only
@@ -183,10 +183,10 @@ hence, would require four identical implementations:
 
   (.) :: (b :p-> c) -> (a :q-> b) -> a :(p ':* q)-> c
 
-.. _Syntax:
-
 Syntax
 ~~~~~~
+
+.. _Syntax:
 
 The new primary constructs are: multiplicities and the multiplicity
 indexed arrow.
@@ -313,10 +313,10 @@ will at least define the following data type:
 
 See the paper for intutions about the ``Unrestricted`` data type.
 
-.. _Multiplicities:
-
 Multiplicities
 ~~~~~~~~~~~~~~
+
+.. _Multiplicities:
 
 So far, we have considered only two multiplicities: ``1`` and ``ω``.
 But the metatheory works with any so-called sup-semi-lattice-ordered
@@ -699,10 +699,10 @@ To be conservative, and avoid potential such issue, we currently
 consider exceptions as only carrying unrestricted payloads in our
 library.
 
-.. _Interactions:
-
 Effect and Interactions
 -----------------------
+
+.. _Interactions:
 
 A staple of this proposal is:
 
@@ -813,10 +813,13 @@ a non-trivial addition to the type-checker. We may decide that
 a simplified fragment is better suited for our use-case that the full
 generality of AC.
 
-.. _Alternatives:
-
 Alternatives
 ------------
+
+.. _Alternatives:
+
+This section describes variants that could be considered for inclusion
+in the proposal.
 
 Syntax of multiplicity-parametric arrow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
