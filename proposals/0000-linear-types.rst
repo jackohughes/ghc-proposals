@@ -690,14 +690,15 @@ ensure resource safety, the type cannot be linear:
 	 -> (e -> RIO (Unrestricted a))
 	 -> RIO (Unrestricted a)
 
-That is: no linear resource previously allocated can be referenced in
-the body or the handler, and no resource allocated in the body or
-handler can be returned. In effect, ``catchL`` delimits an new scope,
-in which linear resources are isolated. To implement ``catchL``, we
-simply give it its own release action table, so that in case of
-exceptions all the local resources are released by ``catchL``, as
-``runRIO`` does, before the handler is called. The original release
-action table is then reinstated.
+That is: no linear resource previously allocated (in particular linear
+variables which are not ``RIO`` resources) can be referenced in the
+body or the handler, and no resource allocated in the body or handler
+can be returned. In effect, ``catchL`` delimits a new scope, in which
+linear resources are isolated. To implement ``catchL``, we simply give
+it its own release action table, so that in case of exceptions all the
+local resources are released by ``catchL``, as ``runRIO`` does, before
+the handler is called. The original release action table is then
+reinstated.
 
 With this implementation, it is clear that capturing linear resources
 from the outside scope would compromise timely release, and returning
