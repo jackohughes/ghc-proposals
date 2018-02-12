@@ -1415,6 +1415,7 @@ Here is a summary of the changes included in the paper:
   proposal.
 
 Here are the changes and interactions which were omitted in the paper:
+
 - In the paper the only polymorphism described is polymorphism in
   multiplicities, there is no added difficulty due to general type
   polymorphism.
