@@ -752,6 +752,7 @@ which only exist in the unrestricted case. For instance
 Means
 
 ::
+
   swap' :: (a,b) ->. (b,a)
   swap' xy = (snd xy, fst xy)
 
