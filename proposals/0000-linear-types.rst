@@ -188,21 +188,40 @@ Syntax
 
 .. _Syntax:
 
-This section is only a proposal for a syntax for linear types. For
-other possibilities to consider, see the `Alternatives`_ section.
+*This section is only a proposal for a syntax for linear types. For
+other possibilities to consider, see the `Alternatives`_ section.*
 
-The new primary constructs are: multiplicities and the multiplicity
-indexed arrow.
+This proposal adds only one new syntactical construct:
 
-- Multiplicities are a datatype:
+- The multiplicity annotated arrow, for polymorphism, is written
+  ``a :p-> b`` (where ``a`` and ``b`` are types and ``p`` is a
+  multiplicity). To avoid introducing a new notion of "mixfix"
+  operators, we introduce a familly of (infix) type constructors:
+  ``(:p->)`` for each multiplicity ``p``. This technically steals
+  syntax as ``(:)`` is a valid type operator under the discouraged
+  ``-XDataKinds`` syntax. But this should not be a problem in
+  practice.
 
-  ::
+  - In ``(:p->)``, ``p`` can be any type expression of kind
+    ``Multiplicity`` (see below). So that the following is legal
+    (though see Alternatives_):
+
+    ::
+
+      type familly F (a :: *) :: Multiplicity
+      f ::  forall (a :: *). Int  :(F a)-> a -> a
+
+In the fashion of levity polymorphism, the proposal introduces a data
+type ``Multiplicity`` which is treated specially by the type checker,
+to represent the multiplicities:
+
+- ::
 
     data Multiplicity
-      = One
-      | Omega
+      = One    -- represents 1
+      | Omega  -- represents ω
 
-  In addition, two specially recognised type families:
+- Accompanied by two specially recognised type families:
 
   ::
 
@@ -212,14 +231,6 @@ indexed arrow.
   Note: unification of
   multiplicities will be performed up to the semiring laws for
   ``(:+)`` and ``(:*)`` (see Specification_).
-- The multiplicity annotated arrow, for polymorphism, is written
-  ``a :p-> b`` (where ``a`` and ``b`` are types and ``p`` is a
-  multiplicity). To avoid introducing a new notion of "mixfix"
-  operators, we introduce a familly of (infix) type constructors:
-  ``(:p->)`` for each multiplicity ``p``. This technically steals
-  syntax as ``(:)`` is a valid type operator under the discouraged
-  ``-XDataKinds`` syntax. But this should not be a problem in
-  practice.
 
 The linear and unrestricted arrows are aliases:
 
@@ -867,6 +878,27 @@ except to the left of an arrow. And ``WithMult a p -> b`` means
 ::
 
   map :: (a `WithMult` p -> b) -> [a] `WithMult` p -> [b]
+
+Syntax of multiplicity expression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We proposed that, in ``a :p-> b``, ``p`` could be any expression, as
+long as it is of kind ``Multiplicity``. This is simpler in terms of
+modifying the parser, but the error messages may be confusing for very
+little benefit: in practice we would expect to have polynomial
+expressions of multiplicity variables. Plus, any expression beyond
+this form is unlikely to be resolved by the type checker
+satisfactorily.
+
+So we could decide to restrict ``p`` to the following grammar:
+
+.. code:: bnf
+
+  MULT ::= 'One
+         | 'Omega
+         | VARIABLE
+         | MULT :+ MULT
+         | MULT :* MULT
 
 Lexical tokens of the multiplicity-parametric arrow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
