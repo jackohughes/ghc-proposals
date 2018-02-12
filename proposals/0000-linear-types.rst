@@ -468,10 +468,43 @@ Wildcard patterns are especially useful in multiple-equations
   mix xs [] = xs
   mix (x:xs) (y:ys) = x:y:(mix xs ys)
 
+Let us illustrate the issue, with a variant of the previous example.
+
+::
+
+  data Colour
+    = Red
+    | Green
+    | Blue
+
+  f :: Colour ->. Colour ->. Colour
+  f Red q = q
+  f p Green = p
+  f Blue q = q
+
+The function ``f`` is desugared into the following Core expression
+
+::
+
+  f = \ p q -> case_1 p of p2
+     { Red -> q
+     ; WILDCARD ->
+         case_1 q of q2
+         { Green -> p2
+         ; WILDCARD ->
+             case_1 p2 of p3
+             { Blue -> q2
+             ; WILDCARD -> <error> }}}
+
+However the usage of ``p2`` and ``q2`` is different in different
+branches of the ``case``, so they are not used linearly, at least not
+using our typing rules. To accept code such as the above, we would
+need a typing rule, in Core, which accepts the desugaring of ``f``.
+
 If this sort of code is allowed (that is, the generated code is
 accepted in Core), then multiple-equations and deep pattern pose no
 difficulty. Otherwise the surface language will have to include a
-criterion which makes the above set of equation unsound, while
+criterion which makes the above set of equations unsound, while
 accepting the code below:
 
 ::
