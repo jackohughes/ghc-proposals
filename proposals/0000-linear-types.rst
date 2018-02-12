@@ -814,6 +814,7 @@ a non-trivial addition to the type-checker. We may decide that
 a simplified fragment is better suited for our use-case that the full
 generality of AC.
 
+.. _Alternatives:
 
 Alternatives
 ------------
