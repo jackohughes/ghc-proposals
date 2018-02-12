@@ -959,10 +959,10 @@ a o``). ``-o`` does not convey the intuition that ``->.`` is just
 ``->`` for most intents and purposes (except for those advanced users
 who do care about the distinction).
 
-.. _`Binders with multiplicity`
-
 Binders with multiplicity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _`Binders with multiplicity`:
 
 In the paper, we wrote ``λ x :₁ A. u`` for (unannotated) linear
 functions. We don't currently provide a corresponding syntax, for lack
@@ -975,10 +975,11 @@ with different multiplicities.
 
   data R = R { unrestrictedField ::(Omega) A, linearField ::(One) B }
 
-.. _`Affine types`
 
 Affine types instead of linear types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _`Affine types`:
 
 In the presence of exceptions, it may seem that linear functions do
 not necessarily consume their arguments. For instance, an ``RIO a``
