@@ -506,13 +506,13 @@ into a linear ``->.`` in an interface.
 Records and projections
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Records constructors
+Records constructors are linear. That is. in
 
 ::
 
    data R = R {f1 :: A1, … fn :: An}
 
-are linear constructors: ``R :: A1 ->. … ->. An ->. R``. Projections
+we have ``R :: A1 ->. … ->. An ->. R``. Projections
 take an *unrestricted* record as argument: ``f1 :: R -> A1`` (because
 otherwise the other fields would not be consumed). There is an
 exception to this rule: if all the other fields are unrestricted (in
@@ -537,7 +537,7 @@ Inference
 
 Because of backwards compatibility, we initially chose the following
 strategy: when the type of a function is not constrained by given
-constraints, we infer it to have multiplicity ω.
+constraints, we conservatively assume it to have multiplicity ω.
 
 Experience shows that this sometimes yield very confusing error messages
 where perfectly valid code is rejected:
@@ -603,7 +603,7 @@ implementation of ``RIO`` (see `here
 <https://github.com/tweag/linear-base/blob/master/src/System/IO/Resource.hs>`_
 for a detailed implementation).
 
-First, note that since Haskell program are of type ``IO ()``, we need a
+First, note that since Haskell programs are of type ``IO ()``, we need a
 way to run ``RIO`` in an ``IO`` computation, this is provided by the
 function
 
@@ -620,8 +620,8 @@ abstraction registers a release action in the release action table
 when they are acquired.
 
 If no exception occurs, then all resources have been released by the
-program. In case an exception occurs, the program jumps to ``runRIO``,
-which releases the leftover resources.
+program. In case an exception occurs, the program jumps to the handler
+installed by ``runRIO``, which releases the leftover resources.
 
 An alternative strategy would be to add terminators on every resources
 acquired in ``RIO``. Release in the non-exceptional case would still
@@ -683,7 +683,7 @@ a``. Correspondingly, the type of the exception-throwing primitives are:
 ::
 
   throwRIO :: Exception e => e -> RIO a
-  trow :: Exception e => e -> a
+  throw :: Exception e => e -> a
 
 That is, exceptions don't have a linear payload.
 
@@ -866,7 +866,7 @@ who do care about the distinction).
 Binders with multiplicity
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the paper, we wrote ``λ x :₁ A, u`` for (unannotated) linear
+In the paper, we wrote ``λ x :₁ A. u`` for (unannotated) linear
 functions. We don't currently provide a corresponding syntax, for lack
 of good syntax.
 
@@ -885,7 +885,7 @@ Affine types instead of linear types
 In the presence of exceptions, it may seem that linear functions do
 not necessarily consume their arguments. For instance, an ``RIO a``
 may abort before closing its file handles. And because of ``catch`` we
-are able to be observe this effect. Could affine types jibe better
+are able to be observe this effect. Could affine types agree better
 with this reality?
 
 A function is called *affine* if it guarantees that if its returned
@@ -980,7 +980,7 @@ types and where linear types would impose a high implementation and/or
 API design cost.
 
 Finally, while it is easy to implement system (3), we have not
-included it in the proposal. We propose to shelve it for a later
+included it in the proposal. We propose to reserve it for a later
 proposal (see also `More multiplicities`_ below), while thriving in
 this proposal to focus first on the minimal system that adequately
 addresses the motivations.
