@@ -62,7 +62,7 @@ Later, in another module, this will be used as ::
 Proposed Change Specification
 -----------------------------
 
-* GHC grammar is extended to introduce ``import toplevel Module.Name` syntax.
+* GHC grammar is extended to introduce ``import toplevel Module.Name`` syntax.
 * GHC is extended so that a module keep its "top level" informations, so that they can be used by the ``import toplevel`` syntax.
 
 
