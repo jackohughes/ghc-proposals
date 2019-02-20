@@ -1,5 +1,5 @@
 Import qualified by default
-========================
+===========================
 
 .. proposal-number:: Leave blank. This will be filled in when the proposal is
                      accepted.
