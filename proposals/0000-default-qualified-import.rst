@@ -15,7 +15,7 @@ Import qualified by default
 .. sectnum::
 .. contents::
 
-We propose a new extension to GHC `QualifiedImports` which switch the behavior of import from unqualified by default to qualified by default. We also propose to use the module name in a type context to reference the main type of the module.
+We propose a new extension to GHC `QualifiedImports` which switch the default behavior of import from unqualified to qualified. We also propose to use the module name in a type context to reference the "main" type of the module.
 
 In short ::
 
@@ -38,12 +38,13 @@ will become ::
 Motivation
 ------------
 
-A lot of haskell modules are designed to be imported qualified, `vector`, `containers`, `...`, TODO: insert here an hackage survey on which add facts to this sentence!, however, by default the haskell language import unqualified.
+A lot of haskell modules are designed to be imported qualified, `vector`, `containers`, `...`, TODO: insert here an hackage survey which add facts to this sentence!, however, by default the haskell language import unqualified.
 
 By being the solution on less effort, developers are usually importing unqualified first and this leads to many issues in the development process:
 
 * Without tooling, it is difficult to know the origin of a function
 * The introduction of a new function in a module may lead to broken builds
+* A new unqualified import will lead to symbol conflict.
 * Developers usually switch to qualified import later and need to requalifiy all their function. Which is painful without tooling.
 
 By doing this switch, we forces users to make the right choice by default (TODO: who am I to think that this is the right choice? ;)
@@ -53,7 +54,6 @@ By doing this switch, we forces users to make the right choice by default (TODO:
 - python: qualified by default
 - c++: namespace are not flattened by default
 - ....
-
 
 We also want to change the way types are imported. We are seeing a lot of ::
 
@@ -68,7 +68,7 @@ We observed that a lot of modules have a "main" type which is usually named as t
 * ``Data.Sequence``: ``Sequence``
 * ...
 
-We propose to use the fact that both namespaces are already separated to implicitly import the "main type" with the same name as the module.
+We also propose to automatically import the "main type" with the same name as the module.
   
 
 Proposed Change Specification
