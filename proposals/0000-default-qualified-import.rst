@@ -15,7 +15,7 @@ Import qualified by default
 .. sectnum::
 .. contents::
 
-We propose a new extension to GHC `QualifiedImports` which switch the default behavior of import from unqualified to qualified. Unqualified modifier will appear after the module name. We also propose to use the module name in a type context to reference the "main" type of the module.
+We propose a new extension to GHC ``QualifiedImports`` which switchs the default behavior of import from unqualified to qualified. Unqualified modifier will appear after the module name. We also propose to use the module name in a type context to reference the "main" type of the module.
 
 In short::
 
