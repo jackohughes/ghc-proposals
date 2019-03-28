@@ -85,29 +85,31 @@ The part of the proposal is similar to this one: https://github.com/ghc-proposal
 Module name as type
 ~~~~~~~~~~~~~~~~~~~
 
-.. todo come back here
-
-We also want to change the way types are imported. A common idiom is to import qualified a module and then import unqualified a type from that module::
+We observed that a lot of modules have a "main" type which is usually named as the last component of the module (e.g. ``Data.HashMap`` exports ``HashMap``). A related common idiom is to import qualified a module and then import unqualified a type from that module::
 
   import Data.ByteString (ByteString)
   import qualified Data.ByteString as ByteString
 
-This way developers get ``ByteString`` the module and ``ByteString`` the type in scope.
+This way developers get ``ByteString`` the module and ``ByteString`` the type in scope. This is usually done to avoid the repetitive `ByteString.ByteString` reference.
 
-We observed that a lot of modules have a "main" type which is usually named as the last component of the module:
+This pattern is so common in Haskell libraries that we want to reduce the associated boilerplate. We propose to import unqualified the type which have the same name as name given to the imported module. For example, the following qualified import::
 
-* ``Data.HashMap``: ``HashMap``
-* ``Data.Sequence``: ``Sequence``
-* ...
+  import Data.ByteString as ByteString -- This is a qualified import due to this proposal change
 
-We want to reduce this common boilerplate by importing unqualified the type which have the same name as name given to the imported module. For example, the following qualified import::
-
-  import Data.ByteString as ByteString
-
-will also import ``Data.ByteString.Bytestring`` as ``ByteString``, so the repetitive ``ByteString.ByteString`` reference is avoided without the cost of one supplementary import line.
+will also import ``Data.ByteString.Bytestring`` as ``ByteString``.
 
 Note that the imported type will share the same name as the imported module, but they live in two different namespace, module are not used directly at the type level.
-  
+
+Also, there is no actual consensus on the alias to use when importing, for example we observes the followings:
+
+- ``import Data.ByteString as B``
+- ``import Data.ByteString as BS``
+- ``import Data.ByteString as ByteString``
+- ``import Data.ByteString as StrictByteString``
+
+
+This makes source code reading usually difficult. We think that automatically importing the "main type" of a module based on module alias name will give developers a default choice.
+
 Proposed Change Specification
 -----------------------------
 
@@ -135,7 +137,9 @@ We'll then also:
 Effect and Interactions
 -----------------------
 
-This proposal changes the default behavior of the import statement and slightly changes its syntax. Incidently, this will simplify the import list and will orient new developments into qualified import by default. The automatic import of the "main type" will reduce boilerplate and will direct users in the choice of the module alias name.
+This proposal changes the default behavior of the import statement and slightly changes its syntax. Incidently, this will simplify the import list and will orient new developments into qualified import by default.
+
+The automatic import of the "main type" will reduce boilerplate. We also hope that it will introduce a preferred name for import alias.
 
 Other than that, we don't see any other interactions with the language. The new syntax will however have an impact on tools which parses haskell for import statement which have to be updated.
 
@@ -152,7 +156,7 @@ Alternatives
 ------------
 
 1. We may not implement the "main type" import feature
-2. The syntax for ``unqualified`` import can be different. The proposed syntax is ``import ModuleName unqualified (as Foo)``, but we also envisaged:
+2. The syntax for ``unqualified`` import can be different. The proposed syntax is ``import ModuleName unqualified (as Foo)``, the following alternatives are possible:
 
    - ``unqualified`` before the module name: ``import unqualified ModuleName``
    - ``unqualified`` is `as`z; ``import ModuleName as unqualified``.
