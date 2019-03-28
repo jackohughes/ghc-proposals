@@ -15,7 +15,7 @@ Import qualified by default
 .. sectnum::
 .. contents::
 
-We propose a new extension to GHC ``QualifiedImports`` which switchs the default behavior of import from unqualified to qualified. Unqualified modifier will appear after the module name. We also propose to use the module name in a type context to reference the "main" type of the module.
+We propose a new extension to GHC ``QualifiedImports`` which switch the default behavior of import from unqualified to qualified. Unqualified modifier will appear after the module name. We also propose to use the module name in a type context to reference the "main" type of the module.
 
 In short::
 
@@ -39,53 +39,60 @@ will become::
 Motivation
 ------------
 
-We'd like to ease programmer usage of module by simplifying the import syntax with three changes:
+We'd like to ease programmer usage of module by simplifying the import syntax with the following changes:
 
 - Import should be qualified by default.
 - Unqualified imports should be specified after the module name.
-- Module "given" name (using ``as``) should be usable as a type, representing the "main" type provided by the module.
 
 Qualified as default
 ~~~~~~~~~~~~~~~~~~~~
 
-A lot of haskell modules are designed to be imported qualified, ``vector``, ``containers``, ``...``, however, by default the haskell language import unqualified.
+A lot of haskell modules are designed to be imported qualified, (e.g. ``vector``, ``containers`` have conflicting bindings), however, by default the haskell language import unqualified.
 
-By being the solution on less effort, developers are usually importing unqualified first, implying that:
+By being the solution of less effort, developers are usually importing unqualified first, implying that:
 
 * Without tooling, it is difficult to know the origin of a function
-* Symbol conflict can appear when a new module is imported unqualified or when a module introduces a new symbol. In context of the Haskell package versioning policy (PVP), a new binding is not considered a breaking change, but it can lead to symbol conflict if it appears in a module which is imported unqualified.
+* Symbol conflicts can appear when a new module is imported unqualified or when a module introduces a new symbol. In context of the Haskell package versioning policy (PVP), a new binding is not considered a breaking change, but it can lead to symbol conflict if it appears in a module which is imported unqualified.
 * Developers usually switch to qualified import later and need to qualify all their name. Which is painful without tooling and generate important diffs.
 
-By doing this switch, we forces users to make the right choice by default.
+We propose to fix this issues by importing qualified by default::
 
-.. TODO: survey of how it's done in many other languages
-  - python: qualified by default
-  - c++: namespace are not flattened by default
-  - ....
+  import Module
 
+will have the same meaning as the current syntax::
+
+  import qualified Module
 
 Unqualified appears after the module name
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For alignment consistency, many authors are aligning module name leaving space for the ``qualified`` modifier, such as::
+For alignment consistency, many authors are aligning module name, thus leaving indentation spaces for the possible ``qualified`` modifier, such as::
 
   import qualified Data.ByteString as ByteString
   import           Data.Ord
 
 This leads to sorting considerations (are we sorting by qualified/unqualified status) and surprising presence of spaces. Without tooling, this spacing must be inserted manually.
 
-We propose to move the ``unqualified`` modifier after the name. The part of the proposal is similar to this one: https://github.com/ghc-proposals/ghc-proposals/pull/190, but they only focus on changing the modifier position and not the default qualification strategy.
+We propose to move the ``unqualified`` modifier after the name, such as::
 
 
-[Optional] Module name as type
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  
-We also want to change the way types are imported. We are seeing a lot of::
+  import Data.ByteString as ByteString
+  import Data.Ord unqualified
+
+The part of the proposal is similar to this one: https://github.com/ghc-proposals/ghc-proposals/pull/190, but they only focus on changing the modifier position and not the default qualification strategy.
+
+
+Module name as type
+~~~~~~~~~~~~~~~~~~~
+
+.. todo come back here
+
+We also want to change the way types are imported. A common idiom is to import qualified a module and then import unqualified a type from that module::
 
   import Data.ByteString (ByteString)
   import qualified Data.ByteString as ByteString
 
-This way developers get ``ByteString`` the module and ``ByteString`` the type in scope. Note how they live in two different namespaces.
+This way developers get ``ByteString`` the module and ``ByteString`` the type in scope.
 
 We observed that a lot of modules have a "main" type which is usually named as the last component of the module:
 
@@ -93,58 +100,83 @@ We observed that a lot of modules have a "main" type which is usually named as t
 * ``Data.Sequence``: ``Sequence``
 * ...
 
-We also propose to automatically import the "main type" with the same name as the module.
-  
+We want to reduce this common boilerplate by importing unqualified the type which have the same name as name given to the imported module. For example, the following qualified import::
 
+  import Data.ByteString as ByteString
+
+will also import ``Data.ByteString.Bytestring`` as ``ByteString``, so the repetitive ``ByteString.ByteString`` reference is avoided without the cost of one supplementary import line.
+
+Note that the imported type will share the same name as the imported module, but they live in two different namespace, module are not used directly at the type level.
+  
 Proposed Change Specification
 -----------------------------
 
-A new language ``QualifiedImports`` is introduced. When enabled it:
+A new language ``QualifiedImports`` is introduced. When enabled, it:
 
 * remove the ``qualified`` modifier from ``import`` syntax
-* changes the default behavior of ``import`` to qualified imports.
 * introduce the ``unqualified`` modifier to the ``import`` syntax, after the module name, but before the optional ``as`` and binding import list.
-* automatically import the "main type" with the same name as the qualified module.
+
+This can be summarized by this change to the import grammar. From::
+
+  importdecl :: { LImportDecl GhcPs }
+     : 'import' maybe_src maybe_safe optqualified maybe_pkg modid maybeas maybeimpspec
+
+we change it to::
+
+  importdecl :: { LImportDecl GhcPs }
+     : 'import' maybe_src maybe_safe maybe_pkg modid optunqualified maybeas maybeimpspec
+
+We'll then also:
+     
+* changes the default behavior of ``import`` to qualified imports. "Naked" import statement will be qualified, and unqualified imports will be done using the ``unqualified` modifier.
+* automatically import the "main type" with the same name as the qualified module if it exits.
 
 
 Effect and Interactions
 -----------------------
 
-This proposal changes the default behavior of the import statement and slightly changes its syntax. Other than that, we don't see any other interactions with the language. The new syntax will however have an impact on all tools which parses haskell for import statement which will have to update their parser.
+This proposal changes the default behavior of the import statement and slightly changes its syntax. Incidently, this will simplify the import list and will orient new developments into qualified import by default. The automatic import of the "main type" will reduce boilerplate and will direct users in the choice of the module alias name.
 
+Other than that, we don't see any other interactions with the language. The new syntax will however have an impact on tools which parses haskell for import statement which have to be updated.
 
 Costs and Drawbacks
 -------------------
 
-The implementation cost is a few lines of changes in the parser and in the import behavior. The usage of module name as a type when used in a type context may disallow future extension of the language with first class module.
+The implementation cost is a few lines of changes in the parser and in the import behavior. The automatic import of the "main type" needs limited changes to the import mechanism.
 
-This extension changes the semantic of haskell import statement, so it cannot be switched on without changes to all the import statements of a module, but this operation is straightforward and won't surprise module authors.
+The automatic import of type using the same name as the module alias may disallow future extension of the language where module may be used in a type context.
+
+This extension changes the semantic of Haskell import statement, so it cannot be switched on without changes to all the import statements of a module, but this operation is straightforward and won't surprise module authors.
 
 Alternatives
 ------------
 
-1. Allowing the cohabitation of ``qualified`` and ``unqualified`` modifiers does not seem to bring any advantage, so we discarded this alternative.
-2. We may not implement the "main type" import feature
-3. The syntax for ``unqualified`` import can be different. For example, python uses ``from ModuleName import *`` for unqualified import, we may use something similar such as ``import Module as *`` or ``import module as unqualified``, but theses solutions conflicts with the ``as`` keyword.
+1. We may not implement the "main type" import feature
+2. The syntax for ``unqualified`` import can be different. The proposed syntax is ``import ModuleName unqualified (as Foo)``, but we also envisaged:
+
+   - ``unqualified`` before the module name: ``import unqualified ModuleName``
+   - ``unqualified`` is `as`z; ``import ModuleName as unqualified``.
+3. The definition of the main type. We choose to type named as the module alias, so ``import Data.ByteString as Foo`` will try (and fail) to import unqualified ``Data.ByteString.Foo``. However we may also:
+   - import the type with the same name as the last component of the fully qualified module name. ``import Data.Container as Storage`` will import `Data.Container.Container`.
+   - introduce a new syntax on module export list to specify the main type, for example::
+
+       module Data.HashMap.Strict (
+         main HashMap,
+	 ...
+       )
 
 Unresolved Questions
 --------------------
 
-1. The definition of the main type is complicated, we have a few options:
+None yet.
 
-  * Using the type with the same name as the last component of the module name. For example ``Data.Container`` will use ``Data.Container.Container`` as main type. But it won't work for modules such as ``Data.HashMap.Strict``.
-  * Using the type with the same name as the ``as`` clause. For example, ``import Data.HashMap.Strict as HashMap`` will use ``HashMap`` as the main type.
-  * Introduce a new syntax in module export list to specify the main type. For example::
-     module Data.HashMap.Strict (
-        main HashMap,
-        ...
-     )
 
 Implementation Plan
 -------------------
 
 I, @guibou, volunteer to do this job with a bit of mentoring from tweag collegues. I don't think that's difficult, we need to:
 
+- introduce the extension, that's fairly straightforward.
 - change the grammar to introduce ``unqualified`` and remove ``qualified``. It is a minor change in the parser.
 - change the import logic to import qualified by default. This is also a minor change.
-- (Optional) import the "main type" as well. This may or may not be simple depending on the solution used to select the "main-type".
+- import the "main type" logic. This may be the most difficult part of this implementation, but nothing dramatic.
