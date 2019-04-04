@@ -138,9 +138,6 @@ The implementation cost of retrieving the main type of a module import is not ye
 Alternatives
 ------------
 
-Main type
-~~~~~~~~~
-
 No implicit unqualified import
 ++++++++++++++++++++++++++++++
 
@@ -196,12 +193,6 @@ Here are alternative syntax proposals for explicit unqualified imports
     - ``import ModuleName as .``
 
     Each time, the right-hand side of the ``as`` is a keyword, which signifies unqualified import.
-
-- The syntax for ``unqualified`` import can be different. The proposed syntax is ``import ModuleName unqualified (as Foo)``, the following alternatives are possible:
-
-   - ``unqualified`` before the module name: ``import unqualified ModuleName``
-   - ``unqualified`` is `as`z; ``import ModuleName as unqualified``.
-
 
 
 Unresolved Questions
