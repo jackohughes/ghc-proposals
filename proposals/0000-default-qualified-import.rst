@@ -44,21 +44,18 @@ Motivation
 Qualified as default
 ~~~~~~~~~~~~~~~~~~~~
 
-A lot of Haskell modules are designed to be imported qualified. For instance ``vector`` and ``containers`` have conflicting bindings.
+Manipulation of import sections is, in practice, harder than it needs to be. And programmers spend more time fiddling with their import lists, than they perhaps should. It is distracting to interrupt the writing of a program or a refactoring to go back to the import list that often.
 
-However, the default of the Haskell language is to import module unqualified. In consequence, developers tend to import module unqualified first, and design their internal modules for unqualified imports as well. This implies that:
+One of the main reasons is that so many modules are imported unqualified. Unqualified import mean name conflicts, which in term mean strategies to cope with conflicts. One can either
 
-* Without tooling, it is difficult to know the origin of a function
-* Symbol conflict can appear when a new module is imported unqualified or when a module introduces a new symbol. In context of the Haskell package versioning policy (PVP), a new binding is not considered a breaking change, but it can lead to symbol conflict if it appears in a module which is imported unqualified.
-* Developers who want to switch to qualified import later in their project, then need to qualify all their name. Which is painful without tooling and generate important diffs.
+* Use import lists, but this means returning to the import declaration section every time a new function is needed in a file. It significantly increases the amount of bureaucracy that the programmer must perform.
+* Use hiding lists, which entails much more work, but means that adding a function anywhere in a project may create a conflict and entail a global pass over the project file to hide that new function in many places. Even a package upgrade can cause conflicts, despite the fact that PVP considers adding functions to a package to be a non-breaking change.
 
-To address these issues this proposal makes module imports qualified by default::
+Qualified imports protect against both failure modes, hence entail significantly less bureaucratic work.
 
-  import Module
+The reason, in turn, while Haskell programmers turn to unqualified imports so much is that the language communicates that it is the normal thing to do. Part of the issue is the design of the base library which is clearly designed for unqualified imports and is the first interface that programmers have with Haskell. But a deeper-rooted issue is that unqualified import is *the default*. That is, ``import`` means unqualified import, where qualified import need an extra qualifier. It is a clear signal: unqualified import is normal, qualified import is the advanced one. In fact, it is such a strong signal that it is, in the authors' experience, easy to fall for the trap of importing, unqualified, modules designed for qualified import, such as modules from the ``vector`` or ``containers`` libraries (a decision which inevitably will need to be reversed later).
 
-will have the same meaning as the current syntax::
-
-  import qualified Module
+This proposal introduces a way to make qualified import the default, instead. As a first step to correct this unfortunate situation.
 
 Main type
 ~~~~~~~~~
