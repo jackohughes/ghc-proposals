@@ -121,7 +121,7 @@ When ``-XQualifiedImports`` is enabled
 Effect and Interactions
 -----------------------
 
-By making qualified import a convenient default, this proposal lets software designers make their code base explicitly designed for qualified import first. Helping nudge new developments towards qualified import by default, and push for a simplification of module import bureaucracy.
+By making qualified import a convenient default, this proposal lets software designers make their code base explicitly designed for qualified import first. Helping nudge new developments towards qualified import by default, and push for a simplification of module import bureaucracy. This is not a silver bullet as this won't be a true default and will require a conscious decision. But it's a decision which needs to be made far less often than imports (at most once per file, and it could be activated globally for a project, typically in the cabal file). It also paves the way towards qualified imports being the actual default in a future version of the Haskell Report.
 
 The changes are contained to the import declarations, and there is no known interactions with other parts of the system.
 
