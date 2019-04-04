@@ -167,6 +167,20 @@ The main type could be defined differently.
       ...
     )
 
+  This may also be extended to let the user specify a list of symbols which must be always imported unqualified. For example::
+
+    module Foo.Bar.Baz
+      ( symbol
+      , TypeA(..)
+      , TypeB(..)
+      , unqualified TypeB
+      , unqualified symbolB
+      )
+
+  In this context, ``import Foo.Bar.Baz as Module`` will always import ``TypeB`` and ``symbolB`` unqualified.
+
+  However this is a more complex proposal and it is against the motivation of this proposal which tries to minimize the amount of unqualified imports to increase readability and limit side effects such as name conflicts.
+
 
 The reason why we chose to bind the main type to the named with which the import is qualified are
 
