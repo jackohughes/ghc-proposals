@@ -205,17 +205,21 @@ Here are alternative syntax proposals for explicit unqualified imports
 
     Each time, the right-hand side of the ``as`` is a keyword, which signifies unqualified import.
 
+Fully qualified imports
++++++++++++++++++++++++
 
-Unresolved Questions
---------------------
-
-1. User may want to disable implicitly unqualified type import. We thought about the following scheme:
+User may want to disable implicitly unqualified type import. We thought about the following scheme:
 
 - `import Module`: qualified import + unqualified import of the main type
 - `import Module unqualified`: unqualified import
 - `import Module qualified`: fully qualified import: no import of the main type
 
 However the use case is rare and user always have the possibility to disable the implicit import of the main type by naming the imported module with a different name. For example ``import Data.ByteString as ByteString`` will implicitely import the ``ByteString`` type unqualified. However ``import Data.ByteString as LibByteString`` won't import ``ByteString`` unqualified.
+
+Unresolved Questions
+--------------------
+
+None.
 
 Implementation Plan
 -------------------
