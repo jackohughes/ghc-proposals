@@ -123,7 +123,7 @@ Effect and Interactions
 
 By making qualified import a convenient default, this proposal lets software designers make their code base explicitly designed for qualified import first. Helping nudge new developments towards qualified import by default, and push for a simplification of module import bureaucracy.
 
-The changes are contained to the import declarations, and there is no known
+The changes are contained to the import declarations, and there is no known interactions with other parts of the system.
 
 Costs and Drawbacks
 -------------------
