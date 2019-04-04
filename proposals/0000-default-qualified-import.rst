@@ -185,7 +185,7 @@ The reason why we chose to bind the main type to the named with which the import
    hence import ``DMap`` unqualified, and the ``member`` function as ``DMap.member``.
 
 Syntax of unqualified imports
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++++++++
 
 Here are alternative syntax proposals for explicit unqualified imports
 
