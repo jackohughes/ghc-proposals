@@ -113,7 +113,7 @@ When ``-XQualifiedImports`` is enabled
 
   ::
 
-    import modid unqualified [impspec]
+    import modid1 unqualified [as modid2] [impspec]
 
   It imports ``modid`` unqualified (restricted, as usual, to the ``impsec`` if it is specified)
 
@@ -164,7 +164,7 @@ The main type could be defined differently.
       ...
     )
 
-  This may also be extended to let the user specify a list of symbols which must be always imported unqualified. For example::
+  A benefit of this proposal is that it may also be extended to let the user specify a list of symbols which will implicitly imported unqualified. For example::
 
     module Foo.Bar.Baz
       ( symbol
@@ -172,14 +172,15 @@ The main type could be defined differently.
       , TypeB(..)
       , unqualified TypeB
       , unqualified symbolB
+      , unqualified (+)
       )
 
-  In this context, ``import Foo.Bar.Baz as Module`` will always import ``TypeB`` and ``symbolB`` unqualified.
+  In this context, ``import Foo.Bar.Baz as Module`` will always import ``TypeB``, ``symbolB``, and ``(+)`` unqualified. This would be most beneficial for symbols, which typically need to be imported unqualified.
 
-  However this is a more complex proposal and it is against the motivation of this proposal which tries to minimize the amount of unqualified imports to increase readability and limit side effects such as name conflicts.
+  It is, however, a more complex proposal. It also replicates some of the issues of unqualified-as-default as exposed in the `Motivation
+`_ section, albeit less severely (namely: conflicts can easily appear by simply adding functions to an internal module, or upgrading a library). Therefore, such a change would require care, and may be revisited in a dedicated proposal.
 
-
-The reason why we chose to bind the main type to the named with which the import is qualified are
+The reason why we chose to bind the main type to the name with which the import is qualified are
 
 - It works with existing libraries.
 - ``Foo.Foo`` looks very repetitive, ``FooBar.Foo`` feels much less awkward. So really, the former is the one to be avoided.
@@ -197,24 +198,30 @@ Syntax of unqualified imports
 
 Here are alternative syntax proposals for explicit unqualified imports
 
-- More symmetric with the Haskell 98 syntax, ``unqualified`` could be specified in before the module name: ``import unqualified ModuleName``. However, considering the positive responses to https://github.com/ghc-proposals/ghc-proposals/pull/190 , it really does not seem like a good option.
-- Yet another option is to consider, conceptually, and represent visually that unqualified imports are qualified imports in a zero-length namespace. Example syntax could be:
+- More symmetric with the Haskell 98 syntax, ``unqualified`` could be specified in before the module name: ``import unqualified ModuleName``. However, considering the positive responses to https://github.com/ghc-proposals/ghc-proposals/pull/190 , it does not seem like a good option.
+- Yet another option is to consider, conceptually, and represent visually that unqualified imports are just qualified imports in a zero-length namespace. Example syntax could be:
     - ``import ModuleName as unqualified``
     - ``import ModuleName as *``
     - ``import ModuleName as .``
 
     Each time, the right-hand side of the ``as`` is a keyword, which signifies unqualified import.
 
-Fully qualified imports
-+++++++++++++++++++++++
+    It would, however, prevent writing ``import ModuleName unqualified as ImportName`` (which corresponds to the current ``import ModuleName as ImportName``).
 
-User may want to disable implicitly unqualified type import. We thought about the following scheme:
+Option to deactivate implicit unqualified import of the main type
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-- `import Module`: qualified import + unqualified import of the main type
-- `import Module unqualified`: unqualified import
-- `import Module qualified`: fully qualified import: no import of the main type
+It may be desirable, in some cases, to disable the implicit unqualified import of the main type. A possible way to achieve that is, instead of making the ``import qualified`` syntax a syntax error, we could use it to mean “qualified without any implicit unqualified imports”. For consistency with the ``unqualified`` syntax, the ``qualified`` keyword would presumably come after the module name, so that
 
-However the use case is rare and user always have the possibility to disable the implicit import of the main type by naming the imported module with a different name. For example ``import Data.ByteString as ByteString`` will implicitely import the ``ByteString`` type unqualified. However ``import Data.ByteString as LibByteString`` won't import ``ByteString`` unqualified.
+::
+
+   import ByteString qualified as ByteString
+
+would put import ``ByteString.ByteString``, but not the unqualified ``ByteString`` type.
+
+This syntax would imply ``-XQualifiedImportsPostpositive`` (see https://github.com/ghc-proposals/ghc-proposals/pull/190 ).
+
+However, there is no clear motivation for that option. Especially considering that a simple way to avoid the implicit import of the main type is to change the import name: ``import Data.ByteString as LibByteString`` won't import ``ByteString`` unqualified.
 
 Unresolved Questions
 --------------------
