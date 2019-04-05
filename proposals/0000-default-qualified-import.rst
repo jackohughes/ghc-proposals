@@ -136,7 +136,7 @@ Alternatives
 ------------
 
 No implicit unqualified import
-++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We may choose not to implement the implicit unqualified import of the main type. If we did so, we would expect to see a lot of
 
@@ -150,7 +150,7 @@ Since it is already a common idiom. This is not a lot of boilerplate to cope wit
 On the other hand, it does feel awkward to repeat this idiom all over. Therefore, the implicit unqualified import of main types is likely to be a big driver for adoption of the qualified-by-default style.
 
 Alternative definition of the main type
-+++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The main type could be defined differently.
 
@@ -194,7 +194,7 @@ The reason why we chose to bind the main type to the name with which the import 
    hence import ``DMap`` unqualified, and the ``member`` function as ``DMap.member``.
 
 Syntax of unqualified imports
-+++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here are alternative syntax proposals for explicit unqualified imports
 
@@ -209,7 +209,7 @@ Here are alternative syntax proposals for explicit unqualified imports
     It would, however, prevent writing ``import ModuleName unqualified as ImportName`` (which corresponds to the current ``import ModuleName as ImportName``).
 
 Option to deactivate implicit unqualified import of the main type
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 It may be desirable, in some cases, to disable the implicit unqualified import of the main type. A possible way to achieve that is, instead of making the ``import qualified`` syntax a syntax error, we could use it to mean “qualified without any implicit unqualified imports”. For consistency with the ``unqualified`` syntax, the ``qualified`` keyword would presumably come after the module name, so that
 
