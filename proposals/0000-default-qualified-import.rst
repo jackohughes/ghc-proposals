@@ -46,7 +46,7 @@ Qualified as default
 
 Manipulation of import sections is, in practice, harder than it needs to be. And programmers spend more time fiddling with their import lists, than they perhaps should. It is distracting to interrupt the writing of a program or a refactoring to go back to the import list that often.
 
-One of the main reasons is that so many modules are imported unqualified. Unqualified import mean name conflicts, which in term mean strategies to cope with conflicts. One can either
+One of the main reasons is that so many modules are imported unqualified. Unqualified import mean name conflicts, which in turn mean strategies to cope with conflicts. One can either
 
 * Use import lists, but this means returning to the import declaration section every time a new function is needed in a file. It significantly increases the amount of bureaucracy that the programmer must perform.
 * Use hiding lists, which entails much more work, but means that adding a function anywhere in a project may create a conflict and entail a global pass over the project file to hide that new function in many places. Even a package upgrade can cause conflicts, despite the fact that PVP considers adding functions to a package to be a non-breaking change.
