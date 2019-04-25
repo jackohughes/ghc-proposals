@@ -52,7 +52,7 @@ Motivation
 The motivations are the following:
 
 - Making import lists smaller and easier to maintain.
-- Making it easier to understand why a module is imported.
+- Making it easier to understand why a module is imported, and where its symbols are used.
 - Making it easier to refactor a definition, along with its imports.
 - Making it more practical to use qualified imports, especially with operators.
 
@@ -70,7 +70,7 @@ OCaml 3.12, released in 2011, introduced two syntactic contructs for locally ope
 
 Proposed Change Specification
 -----------------------------
-We allow qualified and non-qualified ``import`` statements at the beginning of any ``let``/``where``/``do``-block.
+We allow qualified and non-qualified ``import`` statements at the **beginning** of any ``let``/``where``/``do``-block.
 
 For all constructs, the effect of such imports is limited to the scope the enclosing block. For ``let`` and ``where``, the imports also affect the corresponding expression. For example:
 ::
@@ -130,10 +130,9 @@ The following changes in the Haskell 2010 grammar are required:
 
 Effect and Interactions
 -----------------------
-Detail how the proposed change addresses the original problem raised in the motivation.
+This proposal strictly extends the language, without affecting the behavior of existing code. It does not interact with any existing language extension.
 
-Discuss possibly contentious interactions with existing language or compiler features. 
-
+The changes give programmers various ways to reduce the number of toplevel imports, to limit their effect to specifics parts of the code and to convey intent about their uses. The shortcut syntax can be especially useful for scoping module imports over expressions with operators in DSLs.
 
 Costs and Drawbacks
 -------------------
@@ -144,14 +143,21 @@ Alternatives
 ------------
 To our knowledge, there is no other language feature or extension providing similar benefits.
 
-
 Unresolved Questions
 --------------------
-TODO: Talk about type-level local import ?
+It might be valuable to allow some form of typelevel local import ; the shortcut syntax, in particular, could be used to simplify type signatures.
 
-Explicitly list any remaining issues that remain in the conceptual design and specification. Be upfront and trust that the community will help. Please do not list *implementation* issues.
+Local imports could be used to unambiguously hide globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. Otherwise, uses of those symbols are reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
+::
 
-Hopefully this section will be empty by the time the proposal is brought to the steering committee.
+  {-# LANGUAGE OverloadedStrings #-}
+  import Text.Blaze.Html4.Strict as Blaze
+  import Text.Blaze.Html4.Strict.Attributes as Blaze
+
+  markup :: Html
+  markup = head $ div ! id "foo"
+    where import Blaze
+compiles without error. Moreover, it is questionable whether this snippet should raise a warning, as the intent is made clear by the programmer.
 
 
 Implementation Plan
