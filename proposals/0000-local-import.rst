@@ -43,7 +43,7 @@ For example, the following snippets are considered valid:
     case args of
       x:y:_ -> …
       _ -> do
-        import System.Exit as Exit
+        import qualified System.Exit as Exit
         Exit.{ exitWith $ ExitFailure (-1) }
 
 Motivation
@@ -82,8 +82,7 @@ allows the use of symbols from ``Foo`` in the ``<expr>``. Similary, the same thi
 
   f = <expr>
     where import Foo
-
-Similarly, the set of visible typeclass instances at any given point is the union of instances defined in modules imported in all enclosing scopes.  
+The set of visible typeclass instances at any given point is the union of instances defined in modules imported in all enclosing scopes.  
 
 Moreover, ``import`` statements are allowed to refer to any module qualifier specified outside that block (that is, local ``import`` statements are not limited to full module names). This means that the following is allowed:
 ::
@@ -113,6 +112,18 @@ This is consistent with today's semantics for ``import``, which does not allow f
 
   import qualified Data.Set as Set
   import Set
+
+As is already the case, module qualifiers can be re-used. For example, in:
+::
+
+  import Foo as A
+
+  main :: IO ()
+  main = do
+    import Bar as A
+    A.x
+
+The symbol ``x`` in ``A.x`` is searched in both ``Bar`` and ``Foo``.
 
 Finally, we allow the syntactic shortcut ``Qualifier.{ <expression> }``, which simply desugars to:
 ::
@@ -169,6 +180,18 @@ Local imports could be used to unambiguously hide globally-defined symbols. As a
   markup = head $ div ! id "foo"
     where import Blaze
 compiles without error. Moreover, it is questionable whether this snippet should raise a warning, as the intent is made clear by the programmer. Similarly, DSLs could benefit from this change to override arithmetic operators without implementing bogus ``Num`` instances.
+
+A similar question arises regarding the following example, already given in the Specification section:
+::
+
+  import Foo as A
+
+  main :: IO ()
+  main = do
+    import Bar as A
+    A.x
+If ``x`` is defined in both ``Foo`` and ``Bar``, should its use be considered an error, or should we defined nested scopes, where symbols from the toplevel import can be overriden by the atter import ?
+
 
 Implementation Plan
 -------------------
