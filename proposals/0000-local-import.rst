@@ -140,7 +140,11 @@ TODO: Development and maintenance costs.
 
 We expect these changes to be easy to grasp by beginners. Moreover, they could greatly improve learnability of Haskell libraries, by expliciting the module each function comes from in examples and tutorials.
 
-Some library writers might choose to design their library around this extension, making its use virtually unavoidable for downstream users, which could be perceived as a drawback by those unwilling to enable it.
+Some existing tooling (e.g., ``snack``) assume that imports are only found at the toplevel and might be broken by this change. Perhaps more importantly, this change would make it harder for IDE-like tools such as ``hie`` to determine the set of valid completions ; such tools would need to be made context-sensitive, like OCaml's merlin.
+
+This change would make it harder to determine at first glance inter-dependencies between modules.
+
+Finally, some library writers might choose to design their library around this extension, making its use virtually unavoidable for downstream users, which could be perceived as a drawback by those unwilling to enable it.
 
 Alternatives
 ------------
