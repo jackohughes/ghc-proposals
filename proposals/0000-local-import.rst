@@ -72,7 +72,7 @@ Proposed Change Specification
 -----------------------------
 We allow qualified and non-qualified ``import`` statements at the **beginning** of any ``let``/``where``/``do``-block.
 
-For all constructs, the effect of such imports is limited to the scope the enclosing block. For ``let`` and ``where``, the imports also affect the corresponding expression. For example:
+For all constructs, the effect of such imports is limited to the scope of the enclosing block. For ``let`` and ``where``, the imports also affect the corresponding expression. For example:
 ::
 
   let import Foo in <expr>
