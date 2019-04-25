@@ -136,8 +136,11 @@ The changes give programmers various ways to reduce the number of toplevel impor
 
 Costs and Drawbacks
 -------------------
-Give an estimate on development and maintenance costs. List how this effects learnability of the language for novice users. Define and list any remaining drawbacks that cannot be resolved.
+TODO: Development and maintenance costs.
 
+We expect these changes to be easy to grasp by beginners. Moreover, they could greatly improve learnability of Haskell libraries, by expliciting the module each function comes from in examples and tutorials.
+
+Some library writers might choose to design their library around this extension, making its use virtually unavoidable for downstream users, which could be perceived as a drawback by those unwilling to enable it.
 
 Alternatives
 ------------
@@ -147,7 +150,7 @@ Unresolved Questions
 --------------------
 It might be valuable to allow some form of typelevel local import ; the shortcut syntax, in particular, could be used to simplify type signatures.
 
-Local imports could be used to unambiguously hide globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. Otherwise, uses of those symbols are reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
+Local imports could be used to unambiguously hide globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. This is necessary from preventing uses of those symbols to be reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
 ::
 
   {-# LANGUAGE OverloadedStrings #-}
@@ -157,8 +160,7 @@ Local imports could be used to unambiguously hide globally-defined symbols. As a
   markup :: Html
   markup = head $ div ! id "foo"
     where import Blaze
-compiles without error. Moreover, it is questionable whether this snippet should raise a warning, as the intent is made clear by the programmer.
-
+compiles without error. Moreover, it is questionable whether this snippet should raise a warning, as the intent is made clear by the programmer. Similarly, DSLs could benefit from this change to override arithmetic operators without implementing bogus ``Num`` instances.
 
 Implementation Plan
 -------------------
