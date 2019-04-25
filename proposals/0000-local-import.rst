@@ -146,7 +146,7 @@ We expect these changes to be easy to grasp by beginners. Moreover, they could g
 
 Some existing tooling (e.g., ``snack``) assume that imports are only found at the toplevel and might be broken by this change. Perhaps more importantly, this change would make it harder for IDE-like tools such as ``hie`` to determine the set of valid completions ; such tools would need to be made context-sensitive, like OCaml's merlin.
 
-This change would make it harder to determine at first glance inter-dependencies between modules. We note, however, that looking at the import list in today's Haskell does not provide that facility either ; indeed, symbols can already be used in code through their fully-qualified name, e.g. ``Data.Set.insert``, without the need for a toplevel import.
+This change would make it harder to determine at first glance inter-dependencies between modules.
 
 Finally, some library writers might choose to design their library around this extension. Using such libraries without this extension enabled might be inconvenient, which could be perceived as a drawback by some users.
 
