@@ -61,6 +61,7 @@ Import lists in Haskell can quickly become unwieldly. The recent proliferation o
 Oftentimes, a module is only imported for a single symbol or two. The purpose of such imports is not obvious at first glance and can significantly clutter the import list. Moving those imports closer to the use-site would solve both of these problems by making the intent clearer and removing them from the toplevel list. Moreover, definitions would be easier to refactor, as they would be more self-contained ; for example, it would be easy to remove a definition along with its specific imports.
 
 To avoid polluting the namespace with conflicting identifiers, Haskell programmers can choose between explicit and qualified imports ; however, they are often reluctant to do so as:
+
 - Explicit import lists are inconvenient (they must be edited whenever the code changes). 
 - Module qualifiers can severely affect readability.
 
@@ -81,6 +82,8 @@ allows the use of symbols from ``Foo`` in the ``<expr>``. Similary, the same thi
 
   f = <expr>
     where import Foo
+
+Similarly, the set of visible typeclass instances at any given point is the union of instances defined in modules imported in all enclosing scopes.  
 
 Moreover, ``import`` statements are allowed to refer to any module qualifier specified outside that block (that is, local ``import`` statements are not limited to full module names). This means that the following is allowed:
 ::
@@ -115,17 +118,18 @@ Finally, we allow the syntactic shortcut ``Qualifier.{ <expression> }``, which s
 ::
 
   let import Qualifier in <expression>
-
+(The OCaml syntax, ``Qualifier.( … )``, cannot be used as ``Qualifier`` would then be parsed as a constructor composed with the enclosed expression).
+   
 The following changes in the Haskell 2010 grammar are required:
 
 ::
 
   decls → { impdecls ; decl_1 ; … ; decl_n }    (n ≥ 0)
-       | { decl_1 ; … ; decl_n }
-  lexp → …
-       | modid.{ lexp }
-       | do { stmts }
-       | do { impdecls ; stmts }
+        | { decl_1 ; … ; decl_n }
+  lexp  → …
+        | modid.{ lexp }
+        | do { stmts }
+        | do { impdecls ; stmts }
 
 
 Effect and Interactions
@@ -142,9 +146,9 @@ We expect these changes to be easy to grasp by beginners. Moreover, they could g
 
 Some existing tooling (e.g., ``snack``) assume that imports are only found at the toplevel and might be broken by this change. Perhaps more importantly, this change would make it harder for IDE-like tools such as ``hie`` to determine the set of valid completions ; such tools would need to be made context-sensitive, like OCaml's merlin.
 
-This change would make it harder to determine at first glance inter-dependencies between modules.
+This change would make it harder to determine at first glance inter-dependencies between modules. We note, however, that looking at the import list in today's Haskell does not provide that facility either ; indeed, symbols can already be used in code through their fully-qualified name, e.g. ``Data.Set.insert``, without the need for a toplevel import.
 
-Finally, some library writers might choose to design their library around this extension, making its use virtually unavoidable for downstream users, which could be perceived as a drawback by those unwilling to enable it.
+Finally, some library writers might choose to design their library around this extension. Using such libraries without this extension enabled might be inconvenient, which could be perceived as a drawback by some users.
 
 Alternatives
 ------------
