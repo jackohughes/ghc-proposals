@@ -172,7 +172,7 @@ To our knowledge, there is no other language feature or extension providing simi
 
 It might be valuable to also allow some form of typelevel local import ; the shortcut syntax, in particular, could be used to simplify type signatures.
 
-The syntactic shortcut syntax is orthogonal to the rest of the proposal and could be entirely removed.
+The syntactic shortcut syntax is orthogonal to the rest of the proposal and could be entirely removed. The same functionality could potentially be achieved with QuasiQuoters.
 
 As an extension to the proposed behavior, local imports could be used to shadow globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. This is necessary from preventing uses of those symbols to be reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
 ::
