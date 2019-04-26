@@ -156,8 +156,6 @@ Furthermore, it encourages the use of qualified imports, as those can be locally
 
 Costs and Drawbacks
 -------------------
-TODO: Development and maintenance costs.
-
 These changes should be easy to grasp by beginners. Moreover, they could greatly improve learnability of Haskell libraries, by expliciting the module each function comes from in examples and tutorials.
 
 Some existing tooling (e.g., ``snack``) assume that imports are only found at the toplevel and might be broken by this change. Perhaps more importantly, this change would make it harder for IDE-like tools such as ``hie`` to determine the set of valid completions ; such tools would need to be made context-sensitive, like OCaml's merlin.
@@ -222,7 +220,6 @@ Unresolved Questions
 --------------------
 None at this point.
 
-
 Implementation Plan
 -------------------
-(Optional) If accepted who will implement the change? Which other ressources and prerequisites are required for implementation?
+To be determined.
