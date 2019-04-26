@@ -128,7 +128,7 @@ As is already the case, module qualifiers can be re-used. For example, in:
 
 The symbol ``x`` in ``A.x`` is searched in both ``Bar`` and ``Foo``.
 
-Finally, the syntactic shortcut ``Qualifier.{ <expression> }``, which simply desugars to:
+Finally, the syntactic shortcut ``Qualifier.{ <expression> }`` is introduced, which simply desugars to:
 ::
 
   let import Qualifier in <expression>
@@ -174,7 +174,7 @@ It might be valuable to also allow some form of typelevel local import ; the sho
 
 The syntactic shortcut syntax is orthogonal to the rest of the proposal and could be entirely removed. The same functionality could potentially be achieved with QuasiQuoters.
 
-As an extension to the proposed behavior, local imports could be used to shadow globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. This is necessary from preventing uses of those symbols to be reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
+As an extension to the proposed behavior, local imports could be used to shadow globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. This is necessary for preventing uses of those symbols to be reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
 ::
 
   {-# LANGUAGE OverloadedStrings #-}
@@ -184,9 +184,7 @@ As an extension to the proposed behavior, local imports could be used to shadow 
   markup :: Html
   markup = head $ div ! id "foo"
     where import Blaze
-compiles without error.
-
-Similarly, in the following example:
+compiles without error. Similarly, in the following example:
 ::
 
   import Foo as A
@@ -195,7 +193,7 @@ Similarly, in the following example:
   main = do
     import Bar as A
     A.x
-If ``x`` is defined in both ``Foo`` and ``Bar``, the import from ``A`` could take precedence over the one from ``Foo``. Finally, DSLs could benefit from this change to override arithmetic operators without implementing bogus ``Num`` instances.
+If ``x`` is defined in both ``Foo`` and ``Bar``, the import from ``Bar`` could take precedence over the one from ``Foo``. Finally, DSLs could benefit from this change to override arithmetic operators without implementing bogus ``Num`` instances.
 
 In order to still allow programmers to easily determine the set of imported modules by looking at the top of the file, local imports could be restricted to qualified imports, and possibly allowed to rename already imported modules. Here is an example of both:
 ::
