@@ -15,7 +15,7 @@ Local import
 .. sectnum::
 .. contents::
 
-We propose to allow the use of ``import`` statements in any ``let``, ``where`` or ``do`` block. The effect of those imports is limited to the corresponding block and (for ``let`` and ``where`` blocks) to the defined expression. Moreover, we define a shortcut syntax, ``Qualifier.{ … }``, to allow scoping a local import over a single expression.
+This proposal allows the use of ``import`` statements in any ``let``, ``where`` or ``do`` block. The effect of those imports is limited to the corresponding block and (for ``let`` and ``where`` blocks) to the defined expression. Moreover, it defines a shortcut syntax, ``Qualifier.{ … }``, to allow scoping a local import over a single expression.
 
 For example, the following snippets are considered valid:
 
@@ -48,30 +48,33 @@ For example, the following snippets are considered valid:
 
 Motivation
 ------------
+This proposal is strongly inspired by two OCaml constructs, introduced in 2011 with version 3.12: ``let open Module in …`` and ``Module.( … )``. In less than 10 years, this feature has gained widespread adoption throughout the ecosystem, bringing significant benefits in terms of readability and maintainability.
 
-The motivations are the following:
+The proposed changes introduce Haskell equivalents in order to:
 
-- Making import lists smaller and easier to maintain.
-- Making it easier to understand why a module is imported, and where its symbols are used.
-- Making it easier to refactor a definition, along with its imports.
-- Making it more practical to use qualified imports, especially with operators.
+- Make import lists smaller and easier to maintain.
+- Make it easier to understand why a module is imported, and where its symbols are used.
+- Make it easier to refactor a definition, along with its imports.
+- Make it more practical to use qualified imports, especially with operators.
 
-Import lists in Haskell can quickly become unwieldly. The recent proliferation of GHC proposals intending to simplify module imports is good evidence that this feeling is widely shared.
+Import lists in Haskell can quickly become unwieldly. The recent proliferation of GHC proposals intending to simplify module imports is good evidence that this feeling is widely shared: 1_, 2_, 3_.
 
 Oftentimes, a module is only imported for a single symbol or two. The purpose of such imports is not obvious at first glance and can significantly clutter the import list. Moving those imports closer to the use-site would solve both of these problems by making the intent clearer and removing them from the toplevel list. Moreover, definitions would be easier to refactor, as they would be more self-contained ; for example, it would be easy to remove a definition along with its specific imports.
 
 To avoid polluting the namespace with conflicting identifiers, Haskell programmers can choose between explicit and qualified imports ; however, they are often reluctant to do so as:
 
-- Explicit import lists are inconvenient (they must be edited whenever the code changes). 
+- Explicit import lists are inconvenient (they must be frequently edited). 
 - Module qualifiers can severely affect readability.
 
 The latter problem is often addressed by choosing one-letter qualifiers, which can only be understood by looking up their definition at the top of the file. It is an imperfect solution at best, and does not work well for operators ; for this reason, operators are frequently overloaded via lawless typeclasses for mere syntactic convenience.
 
-OCaml 3.12, released in 2011, introduced two syntactic contructs for locally opening modules: ``let open Module in …`` and ``Module.( … )``. In less than 10 years, this feature has gained widespread adoption throughout the ecosystem, bringing significant benefits in terms of readability and maintainability. For the reasons stated above, we believe Haskell should follow its example.
+.. _1: https://github.com/ghc-proposals/ghc-proposals/pull/190
+.. _2: https://github.com/ghc-proposals/ghc-proposals/pull/205
+.. _3: https://github.com/ghc-proposals/ghc-proposals/pull/220
 
 Proposed Change Specification
 -----------------------------
-We allow qualified and non-qualified ``import`` statements at the **beginning** of any ``let``/``where``/``do``-block.
+Qualified and non-qualified ``import`` statements are allowed at the **beginning** of any ``let``/``where``/``do``-block.
 
 For all constructs, the effect of such imports is limited to the scope of the enclosing block. For ``let`` and ``where``, the imports also affect the corresponding expression. For example:
 ::
@@ -125,11 +128,11 @@ As is already the case, module qualifiers can be re-used. For example, in:
 
 The symbol ``x`` in ``A.x`` is searched in both ``Bar`` and ``Foo``.
 
-Finally, we allow the syntactic shortcut ``Qualifier.{ <expression> }``, which simply desugars to:
+Finally, the syntactic shortcut ``Qualifier.{ <expression> }``, which simply desugars to:
 ::
 
   let import Qualifier in <expression>
-(The OCaml syntax, ``Qualifier.( … )``, cannot be used as ``Qualifier`` would then be parsed as a constructor composed with the enclosed expression).
+The OCaml syntax, ``Qualifier.( … )``, was not chosen as it would steal syntax (this is currently parsed as a value constructor composed with the enclosed expression).
    
 The following changes in the Haskell 2010 grammar are required:
 
@@ -149,11 +152,13 @@ This proposal strictly extends the language, without affecting the behavior of e
 
 The changes give programmers various ways to reduce the number of toplevel imports, to limit their effect to specifics parts of the code and to convey intent about their uses. The shortcut syntax can be especially useful for scoping module imports over expressions with operators in DSLs.
 
+Furthermore, it encourages the use of qualified imports, as those can be locally “de-qualified” in order to improve readability.
+
 Costs and Drawbacks
 -------------------
 TODO: Development and maintenance costs.
 
-We expect these changes to be easy to grasp by beginners. Moreover, they could greatly improve learnability of Haskell libraries, by expliciting the module each function comes from in examples and tutorials.
+These changes should be easy to grasp by beginners. Moreover, they could greatly improve learnability of Haskell libraries, by expliciting the module each function comes from in examples and tutorials.
 
 Some existing tooling (e.g., ``snack``) assume that imports are only found at the toplevel and might be broken by this change. Perhaps more importantly, this change would make it harder for IDE-like tools such as ``hie`` to determine the set of valid completions ; such tools would need to be made context-sensitive, like OCaml's merlin.
 
@@ -165,11 +170,11 @@ Alternatives
 ------------
 To our knowledge, there is no other language feature or extension providing similar benefits.
 
-Unresolved Questions
---------------------
-It might be valuable to allow some form of typelevel local import ; the shortcut syntax, in particular, could be used to simplify type signatures.
+It might be valuable to also allow some form of typelevel local import ; the shortcut syntax, in particular, could be used to simplify type signatures.
 
-Local imports could be used to unambiguously hide globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. This is necessary from preventing uses of those symbols to be reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
+The syntactic shortcut syntax is orthogonal to the rest of the proposal and could be entirely removed.
+
+As an extension to the proposed behavior, local imports could be used to shadow globally-defined symbols. As an example, the ``blaze-html`` library provides symbols for ``head``, ``div`` and ``id`` ; for this reason,  the relevant modules are frequently imported qualified, or those symbols are explicitly hidden with ``-XNoImplicitPrelude`` and an explicit import. This is necessary from preventing uses of those symbols to be reported as ambiguous by the compiler. Without type-driven disambiguation, this is the only sane behavior in current Haskell, which only allows a single, unordered list of module imports ; however, local imports could be seen as defining nested scopes, such that:
 ::
 
   {-# LANGUAGE OverloadedStrings #-}
@@ -179,9 +184,9 @@ Local imports could be used to unambiguously hide globally-defined symbols. As a
   markup :: Html
   markup = head $ div ! id "foo"
     where import Blaze
-compiles without error. Moreover, it is questionable whether this snippet should raise a warning, as the intent is made clear by the programmer. Similarly, DSLs could benefit from this change to override arithmetic operators without implementing bogus ``Num`` instances.
+compiles without error.
 
-A similar question arises regarding the following example, already given in the Specification section:
+Similarly, in the following example:
 ::
 
   import Foo as A
@@ -190,7 +195,34 @@ A similar question arises regarding the following example, already given in the 
   main = do
     import Bar as A
     A.x
-If ``x`` is defined in both ``Foo`` and ``Bar``, should its use be considered an error, or should we defined nested scopes, where symbols from the toplevel import can be overriden by the atter import ?
+If ``x`` is defined in both ``Foo`` and ``Bar``, the import from ``A`` could take precedence over the one from ``Foo``. Finally, DSLs could benefit from this change to override arithmetic operators without implementing bogus ``Num`` instances.
+
+In order to still allow programmers to easily determine the set of imported modules by looking at the top of the file, local imports could be restricted to qualified imports, and possibly allowed to rename already imported modules. Here is an example of both:
+::
+
+  import qualified Data.Map as Map
+  import Foo
+
+  foo = …
+    where import Map
+          import Foo as Bar
+The obvious drawback of this solution is that it goes against one of the stated motivations of this proposal: to reduce the size of import lists. It merely makes it easier to work with qualified imports.
+
+Finally, the effects of local imports in ``let`` and ``where`` blocks could be restricted to the set of underlying definitions, and not scope over the defined expression. This design was considered and rejected, as it would likely give rise to the following idiom:
+::
+
+  foo x = y
+     where import Bar
+           y = Bar.z x
+instead of the lighter:
+::
+
+  foo x = Bar.z x
+    where import Bar
+
+Unresolved Questions
+--------------------
+None at this point.
 
 
 Implementation Plan
