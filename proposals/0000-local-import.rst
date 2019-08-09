@@ -15,9 +15,18 @@ Local import
 .. sectnum::
 .. contents::
 
-This proposal allows the use of ``import`` statements in any ``let``, ``where`` or ``do`` block. The effect of those imports is limited to the corresponding block and (for ``let`` and ``where`` blocks) to the defined expression. Moreover, it defines a shortcut syntax, ``Qualifier.{ … }``, to allow scoping a local import over a single expression.
+This proposal allows the use of ``import`` statements in any ``let``, ``where`` or ``do`` block. The scope of those imports is limited to the corresponding block and (for ``let`` and ``where`` blocks) to the defined expression. Moreover, it defines a shortcut syntax, ``Qualifier.{ … }``, to allow scoping a local import over a single expression.
 
 For example, the following snippets are considered valid:
+
+::
+
+  module MyModule where
+
+  import Data.Set (Set)
+  import qualified Data.Set as Set
+
+  foo s t u = Set.{ s \\ (t \\ u) }
 
 ::
 
@@ -46,27 +55,48 @@ For example, the following snippets are considered valid:
         import qualified System.Exit as Exit
         Exit.{ exitWith $ ExitFailure (-1) }
 
+This proposal is strongly inspired by OCaml's *local open* feature, which introduces two constructions: ``let open Module in …`` and ``Module.( … )``, both with the semantics of importing the namespace ``Module`` (unqualified) in the subsequent expression. It was introduced in 2011 with version 3.12; in less than 10 years, local open has gained widespread adoption throughout the ecosystem, and brought significant benefits in terms of readability and maintainability.
+
 Motivation
 ------------
-This proposal is strongly inspired by two OCaml constructs, introduced in 2011 with version 3.12: ``let open Module in …`` and ``Module.( … )``. In less than 10 years, this feature has gained widespread adoption throughout the ecosystem, bringing significant benefits in terms of readability and maintainability.
 
-The proposed changes introduce Haskell equivalents in order to:
+As witnessed by a recent proliferation of proposals (1_, 2_, 3_), there is a growing desire, in the community, to improve module imports.
 
-- Make import lists smaller and easier to maintain.
-- Make it easier to understand why a module is imported, and where its symbols are used.
-- Make it easier to refactor a definition, along with its imports.
-- Make it more practical to use qualified imports, especially with operators.
+This is yet another of these proposal, with the specific aim of shrinking the trade-off between qualified and unqualified imports:
 
-Import lists in Haskell can quickly become unwieldly. The recent proliferation of GHC proposals intending to simplify module imports is good evidence that this feeling is widely shared: 1_, 2_, 3_.
+- Unqualified imports
+  - Obscure the provenance of identifiers
+  - Have a tendency to conflict with each other
+  - Unless, in both cases, one uses import lists, but import list are costly to maintain
+- Qualified imports
+  - Make for long, repetitive identifiers
+  - Make it unpleasant to use binary operators (to borrow an example from the introduction, we may not want to write ``s Set.\\ (t Set.\\ u)``)
 
-Oftentimes, a module is only imported for a single symbol or two. The purpose of such imports is not obvious at first glance and can significantly clutter the import list. Moving those imports closer to the use-site would solve both of these problems by making the intent clearer and removing them from the toplevel list. Moreover, definitions would be easier to refactor, as they would be more self-contained ; for example, it would be easy to remove a definition along with its specific imports.
+Workarounds for the shortcomings qualified imports include
+- Using one-letter qualified import. It certainly makes for short enough names, but, even ignoring the paucity of one-letter (or even two-letter) identifier, it can quickly become an exercise in obfuscation: what letters should one choose to import modules ``Set``, ``Selectors``, ``Settings`` in the same place?
+- One-letter qualification also doesn't address the case of operators. Operators can be extremely helpful for readability, but qualified operators don't seem to register nearly as well. An option, here, is to only define operators in (lawless) type classes, so that these type classes can be imported unqualified. Individual module can instantiate these type classes instead of exporting operators. This has the cost of obscuring the origin of the operator.
 
-To avoid polluting the namespace with conflicting identifiers, Haskell programmers can choose between explicit and qualified imports ; however, they are often reluctant to do so as:
+The solution introduced by this proposal is, instead, to import modules qualified, *but to locally unqualify them where it's relevant*.
 
-- Explicit import lists are inconvenient (they must be frequently edited). 
-- Module qualifiers can severely affect readability.
+So that instead of
 
-The latter problem is often addressed by choosing one-letter qualifiers, which can only be understood by looking up their definition at the top of the file. It is an imperfect solution at best, and does not work well for operators ; for this reason, operators are frequently overloaded via lawless typeclasses for mere syntactic convenience.
+::
+
+  let x = s Set.\\ (t Set.\\ u)
+
+we can write
+
+::
+
+  let x = Set.{ s \\ (t \\u) }
+
+or
+
+::
+
+  let
+    import Set
+    x = s \\ (t \\ u)
 
 .. _1: https://github.com/ghc-proposals/ghc-proposals/pull/190
 .. _2: https://github.com/ghc-proposals/ghc-proposals/pull/205
@@ -74,6 +104,7 @@ The latter problem is often addressed by choosing one-letter qualifiers, which c
 
 Proposed Change Specification
 -----------------------------
+
 Qualified and non-qualified ``import`` statements are allowed at the **beginning** of any ``let``/``where``/``do``-block.
 
 For all constructs, the effect of such imports is limited to the scope of the enclosing block. For ``let`` and ``where``, the imports also affect the corresponding expression. For example:
